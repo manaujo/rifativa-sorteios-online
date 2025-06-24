@@ -9,14 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Target, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Share2, Target, ShoppingCart, Users, Trophy, Gift } from "lucide-react";
 import Header from "@/components/Header";
+import RankingCompradores from "@/components/campanhas/RankingCompradores";
+import ModalPagamentoPix from "@/components/campanhas/ModalPagamentoPix";
 
 const CampanhaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [quantidade, setQuantidade] = useState(1);
+  const [showModalPagamento, setShowModalPagamento] = useState(false);
   const [compradorInfo, setCompradorInfo] = useState({
     nome: "",
     cpf: "",
@@ -30,8 +33,8 @@ const CampanhaDetalhes = () => {
         .from("campanhas")
         .select(`
           *,
-          users!inner(nome),
-          bilhetes_campanha(quantidade, status)
+          users!inner(nome, chave_pix),
+          bilhetes_campanha(quantidade, status, nome_comprador)
         `)
         .eq("id", id)
         .single();
@@ -39,6 +42,33 @@ const CampanhaDetalhes = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Query para ranking de compradores
+  const { data: ranking } = useQuery({
+    queryKey: ["campanha-ranking", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bilhetes_campanha")
+        .select("nome_comprador, quantidade")
+        .eq("campanha_id", id)
+        .eq("status", "pago");
+      
+      if (error) throw error;
+      
+      // Agrupa por comprador
+      const grouped = data.reduce((acc: any, bilhete) => {
+        const nome = bilhete.nome_comprador;
+        if (!acc[nome]) {
+          acc[nome] = { nome_comprador: nome, total_bilhetes: 0 };
+        }
+        acc[nome].total_bilhetes += bilhete.quantidade;
+        return acc;
+      }, {});
+
+      return Object.values(grouped).sort((a: any, b: any) => b.total_bilhetes - a.total_bilhetes);
+    },
+    enabled: !!id,
   });
 
   const comprarBilhetesMutation = useMutation({
@@ -51,23 +81,24 @@ const CampanhaDetalhes = () => {
           cpf: compradorInfo.cpf,
           telefone: compradorInfo.telefone,
           quantidade: quantidade,
-          status: 'aguardando'
+          status: 'pago'
         });
 
       if (error) throw error;
     },
     onSuccess: () => {
       toast({
-        title: "Bilhetes adquiridos!",
-        description: "Seus bilhetes foram registrados com sucesso. Efetue o pagamento para confirmá-los.",
+        title: "Bilhetes confirmados!",
+        description: "Seus bilhetes foram confirmados com sucesso. Boa sorte!",
       });
       queryClient.invalidateQueries({ queryKey: ["campanha", id] });
+      queryClient.invalidateQueries({ queryKey: ["campanha-ranking", id] });
       setQuantidade(1);
       setCompradorInfo({ nome: "", cpf: "", telefone: "" });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao comprar bilhetes",
+        title: "Erro ao confirmar bilhetes",
         description: error.message,
         variant: "destructive"
       });
@@ -90,7 +121,7 @@ const CampanhaDetalhes = () => {
     }
   };
 
-  const handleCompra = () => {
+  const handleIniciarCompra = () => {
     if (!compradorInfo.nome || !compradorInfo.cpf || !compradorInfo.telefone) {
       toast({
         title: "Dados incompletos",
@@ -109,6 +140,19 @@ const CampanhaDetalhes = () => {
       return;
     }
 
+    if (!campanha?.users?.chave_pix) {
+      toast({
+        title: "Erro",
+        description: "Esta campanha não possui chave PIX configurada.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowModalPagamento(true);
+  };
+
+  const handlePagamentoConfirmado = () => {
     comprarBilhetesMutation.mutate();
   };
 
@@ -117,7 +161,12 @@ const CampanhaDetalhes = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Carregando campanha...</div>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando campanha...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -128,7 +177,9 @@ const CampanhaDetalhes = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Campanha não encontrada</div>
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-bold text-gray-600">Campanha não encontrada</h2>
+          </div>
         </div>
       </div>
     );
@@ -146,25 +197,26 @@ const CampanhaDetalhes = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <Link to="/campanhas" className="inline-flex items-center text-primary-600 hover:text-primary-700">
+          <Link to="/campanhas" className="inline-flex items-center text-primary-600 hover:text-primary-700 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar para campanhas
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Informações da Campanha */}
-          <div className="lg:col-span-2">
-            <Card>
+          <div className="lg:col-span-3">
+            <Card className="mb-6">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <Badge className="bg-blue-100 text-blue-800">
                       <Target className="w-3 h-3 mr-1" />
-                      {campanha.modo === 'simples' ? 'Simples' : 'Combo'}
+                      {campanha.modo === 'simples' ? 'Modo Simples' : 'Modo Combo'}
                     </Badge>
                     {campanha.destaque && (
                       <Badge className="bg-yellow-500 text-white">
+                        <Trophy className="w-3 h-3 mr-1" />
                         Destaque
                       </Badge>
                     )}
@@ -175,8 +227,11 @@ const CampanhaDetalhes = () => {
                   </Button>
                 </div>
                 
-                <CardTitle className="text-2xl">{campanha.titulo}</CardTitle>
-                <p className="text-gray-600">Por: {campanha.users?.nome}</p>
+                <CardTitle className="text-3xl mb-2">{campanha.titulo}</CardTitle>
+                <p className="text-gray-600 flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  Criado por: {campanha.users?.nome}
+                </p>
               </CardHeader>
 
               <CardContent>
@@ -190,52 +245,68 @@ const CampanhaDetalhes = () => {
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">Descrição</h3>
-                    <p className="text-gray-700">{campanha.descricao}</p>
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Gift className="w-5 h-5 mr-2" />
+                      Sobre a Campanha
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{campanha.descricao}</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-primary-600">
+                      <p className="text-3xl font-bold text-primary-600">
                         R$ {Number(campanha.preco_bilhete).toFixed(2)}
                       </p>
-                      <p className="text-sm text-gray-600">por bilhete</p>
+                      <p className="text-sm text-gray-600 mt-1">por bilhete</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-3xl font-bold text-green-600">
                         {totalBilhetes}
                       </p>
-                      <p className="text-sm text-gray-600">bilhetes vendidos</p>
+                      <p className="text-sm text-gray-600 mt-1">bilhetes vendidos</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-700">
+                      <p className="text-3xl font-bold text-green-700">
                         R$ {totalArrecadado.toFixed(2)}
                       </p>
-                      <p className="text-sm text-gray-600">arrecadado</p>
+                      <p className="text-sm text-gray-600 mt-1">arrecadado</p>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Como funciona:</h4>
-                    <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• Bilhetes ilimitados - não há limite de quantidade</li>
-                      <li>• Cada bilhete te dá uma chance de concorrer</li>
-                      <li>• Quanto mais bilhetes, maiores suas chances</li>
-                      <li>• Você está apoiando uma causa importante</li>
-                    </ul>
+                  <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                      <Target className="w-5 h-5 mr-2" />
+                      Como funciona:
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800">
+                      <div className="space-y-2">
+                        <p className="text-sm">• Bilhetes ilimitados disponíveis</p>
+                        <p className="text-sm">• Cada bilhete = uma chance de concorrer</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm">• Quanto mais bilhetes, maiores suas chances</p>
+                        <p className="text-sm">• Você apoia uma causa importante</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Ranking de Compradores */}
+            <RankingCompradores 
+              compradores={ranking || []} 
+              precoBilhete={Number(campanha.preco_bilhete)}
+            />
           </div>
 
           {/* Formulário de Compra */}
-          <div>
+          <div className="lg:col-span-1">
             <Card className="sticky top-4">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-lg">
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Apoiar Campanha
                 </CardTitle>
@@ -250,6 +321,7 @@ const CampanhaDetalhes = () => {
                       min="1"
                       value={quantidade}
                       onChange={(e) => setQuantidade(Number(e.target.value))}
+                      className="text-center font-bold text-lg"
                     />
                   </div>
 
@@ -283,21 +355,23 @@ const CampanhaDetalhes = () => {
                     />
                   </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span>Quantidade:</span>
-                      <span className="font-bold">{quantidade} bilhetes</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-4">
-                      <span>Valor total:</span>
-                      <span className="text-xl font-bold text-primary-600">
-                        R$ {valorTotal.toFixed(2)}
-                      </span>
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">Quantidade:</span>
+                        <span className="font-bold">{quantidade} bilhetes</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Valor total:</span>
+                        <span className="text-xl font-bold text-primary-600">
+                          R$ {valorTotal.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
 
                     <Button 
-                      className="w-full bg-gradient-primary hover:opacity-90"
-                      onClick={handleCompra}
+                      className="w-full bg-gradient-primary hover:opacity-90 h-12 text-lg"
+                      onClick={handleIniciarCompra}
                       disabled={comprarBilhetesMutation.isPending}
                     >
                       {comprarBilhetesMutation.isPending ? "Processando..." : "Comprar Bilhetes"}
@@ -309,6 +383,17 @@ const CampanhaDetalhes = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Pagamento PIX */}
+      <ModalPagamentoPix
+        isOpen={showModalPagamento}
+        onClose={() => setShowModalPagamento(false)}
+        chavePix={campanha.users?.chave_pix || ""}
+        valor={valorTotal}
+        quantidade={quantidade}
+        campanhaTitulo={campanha.titulo}
+        onPagamentoConfirmado={handlePagamentoConfirmado}
+      />
     </div>
   );
 };

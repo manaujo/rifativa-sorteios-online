@@ -1,14 +1,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { Share2, Target, Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Target } from "lucide-react";
 import Header from "@/components/Header";
+import CampanhaCard from "@/components/campanhas/CampanhaCard";
 
 const Campanhas = () => {
+  const { toast } = useToast();
+  
   const { data: campanhas, isLoading } = useQuery({
     queryKey: ["public-campanhas"],
     queryFn: async () => {
@@ -36,7 +36,10 @@ const Campanhas = () => {
       });
     } else {
       navigator.clipboard.writeText(url);
-      alert("Link copiado para a área de transferência!");
+      toast({
+        title: "Link copiado!",
+        description: "Link da campanha copiado para a área de transferência.",
+      });
     }
   };
 
@@ -45,7 +48,12 @@ const Campanhas = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Carregando campanhas...</div>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando campanhas...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -60,105 +68,29 @@ const Campanhas = () => {
           <h1 className="text-4xl font-bold gradient-text mb-4">
             Campanhas de Arrecadação
           </h1>
-          <p className="text-gray-600 text-lg">
-            Apoie causas importantes comprando bilhetes ilimitados!
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Apoie causas importantes comprando bilhetes ilimitados! Cada bilhete te dá uma chance de concorrer e você ainda ajuda uma causa importante.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campanhas?.map((campanha) => {
-            const totalBilhetes = campanha.bilhetes_campanha?.reduce(
-              (acc: number, bilhete: any) => acc + bilhete.quantidade, 0
-            ) || 0;
-            const totalArrecadado = totalBilhetes * Number(campanha.preco_bilhete);
-
-            return (
-              <Card key={campanha.id} className="hover:shadow-lg transition-shadow relative">
-                {campanha.destaque && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <Badge className="bg-yellow-500 text-white">
-                      <Star className="w-3 h-3 mr-1" />
-                      Destaque
-                    </Badge>
-                  </div>
-                )}
-
-                {campanha.imagem && (
-                  <div className="aspect-video overflow-hidden rounded-t-lg">
-                    <img
-                      src={campanha.imagem}
-                      alt={campanha.titulo}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                      <Target className="w-3 h-3 mr-1" />
-                      {campanha.modo === 'simples' ? 'Simples' : 'Combo'}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleShare(campanha.id, campanha.titulo)}
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  <CardTitle className="text-xl">{campanha.titulo}</CardTitle>
-                  <CardDescription className="text-sm text-gray-600">
-                    Por: {campanha.users?.nome}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-gray-700 line-clamp-2">{campanha.descricao}</p>
-                    
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Arrecadado</span>
-                        <span className="text-sm font-medium">
-                          {totalBilhetes} bilhetes
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-green-600">
-                        R$ {totalArrecadado.toFixed(2)}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl font-bold text-primary-600">
-                          R$ {Number(campanha.preco_bilhete).toFixed(2)}
-                        </p>
-                        <p className="text-sm text-gray-500">por bilhete</p>
-                      </div>
-                      
-                      <Link to={`/campanha/${campanha.id}`}>
-                        <Button className="bg-gradient-primary hover:opacity-90">
-                          Apoiar
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {campanhas && campanhas.length === 0 && (
-          <div className="text-center py-12">
-            <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+        {campanhas && campanhas.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {campanhas.map((campanha) => (
+              <CampanhaCard 
+                key={campanha.id} 
+                campanha={campanha} 
+                onShare={handleShare}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <Target className="w-20 h-20 text-gray-300 mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-gray-600 mb-4">
               Nenhuma campanha disponível no momento
             </h3>
-            <p className="text-gray-500">
-              Volte em breve para conferir novas campanhas!
+            <p className="text-gray-500 text-lg">
+              Volte em breve para conferir novas campanhas incríveis!
             </p>
           </div>
         )}

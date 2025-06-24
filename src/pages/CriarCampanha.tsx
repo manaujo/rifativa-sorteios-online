@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Gift, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +26,7 @@ const CriarCampanha = () => {
     destaque: false
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [premios, setPremios] = useState<string[]>([""]);
 
   if (loading) {
     return (
@@ -47,6 +48,22 @@ const CriarCampanha = () => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
     }
+  };
+
+  const addPremio = () => {
+    setPremios([...premios, ""]);
+  };
+
+  const removePremio = (index: number) => {
+    if (premios.length > 1) {
+      setPremios(premios.filter((_, i) => i !== index));
+    }
+  };
+
+  const updatePremio = (index: number, value: string) => {
+    const newPremios = [...premios];
+    newPremios[index] = value;
+    setPremios(newPremios);
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -155,7 +172,7 @@ const CriarCampanha = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <Card className="shadow-xl border-0">
             <CardHeader>
               <CardTitle className="text-2xl">Criar Nova Campanha</CardTitle>
@@ -165,17 +182,34 @@ const CriarCampanha = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="titulo">Título da Campanha</Label>
-                  <Input
-                    id="titulo"
-                    type="text"
-                    placeholder="Ex: Ajuda para cirurgia"
-                    value={formData.titulo}
-                    onChange={(e) => handleInputChange("titulo", e.target.value)}
-                    required
-                    className="h-12"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="titulo">Título da Campanha</Label>
+                    <Input
+                      id="titulo"
+                      type="text"
+                      placeholder="Ex: Ajuda para cirurgia"
+                      value={formData.titulo}
+                      onChange={(e) => handleInputChange("titulo", e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="preco_bilhete">Valor do Bilhete (R$)</Label>
+                    <Input
+                      id="preco_bilhete"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="10.00"
+                      value={formData.preco_bilhete}
+                      onChange={(e) => handleInputChange("preco_bilhete", e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -189,35 +223,65 @@ const CriarCampanha = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="preco_bilhete">Valor do Bilhete (R$)</Label>
-                  <Input
-                    id="preco_bilhete"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="10.00"
-                    value={formData.preco_bilhete}
-                    onChange={(e) => handleInputChange("preco_bilhete", e.target.value)}
-                    required
-                    className="h-12"
-                  />
-                  <p className="text-sm text-gray-600">
-                    Valor que cada pessoa contribuirá
-                  </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Prêmios da Campanha</Label>
+                    <Button type="button" onClick={addPremio} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Prêmio
+                    </Button>
+                  </div>
+                  
+                  {premios.map((premio, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Gift className="w-4 h-4 text-gray-400" />
+                      <Input
+                        placeholder={`Prêmio ${index + 1} (ex: TV 50 polegadas)`}
+                        value={premio}
+                        onChange={(e) => updatePremio(index, e.target.value)}
+                        className="flex-1"
+                      />
+                      {premios.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => removePremio(index)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="modo">Modo da Campanha</Label>
-                  <Select value={formData.modo} onValueChange={(value) => handleInputChange("modo", value)}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simples">Simples - Cada bilhete = 1 contribuição</SelectItem>
-                      <SelectItem value="combo">Combo - Oferece combos com desconto</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="modo">Modo da Campanha</Label>
+                    <Select value={formData.modo} onValueChange={(value) => handleInputChange("modo", value)}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="simples">Simples - Valor fixo por bilhete</SelectItem>
+                        <SelectItem value="combo">Combo - Valor = múltiplos bilhetes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="imagem">Imagem da Campanha</Label>
+                    <div className="flex items-center space-x-4">
+                      <Input
+                        id="imagem"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="h-12"
+                      />
+                      <Upload className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -229,23 +293,6 @@ const CriarCampanha = () => {
                   <Label htmlFor="destaque">Campanha em destaque</Label>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="imagem">Imagem da Campanha</Label>
-                  <div className="flex items-center space-x-4">
-                    <Input
-                      id="imagem"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="h-12"
-                    />
-                    <Upload className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Adicione uma imagem representativa (opcional)
-                  </p>
-                </div>
-
                 {!profile.chave_pix && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-yellow-800">
@@ -255,12 +302,16 @@ const CriarCampanha = () => {
                 )}
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Informações da Campanha</h4>
-                  <div className="text-sm text-blue-800 space-y-1">
-                    <p>• Modo: {formData.modo === 'simples' ? 'Simples' : 'Combo'}</p>
-                    <p>• Valor por bilhete: R$ {formData.preco_bilhete || "0,00"}</p>
-                    <p>• Destaque: {formData.destaque ? 'Sim' : 'Não'}</p>
-                    <p>• Chave PIX: {profile.chave_pix || 'Não configurada'}</p>
+                  <h4 className="font-semibold text-blue-900 mb-3">Resumo da Campanha</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+                    <div className="space-y-1">
+                      <p>• Modo: {formData.modo === 'simples' ? 'Simples' : 'Combo'}</p>
+                      <p>• Valor por bilhete: R$ {formData.preco_bilhete || "0,00"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p>• Destaque: {formData.destaque ? 'Sim' : 'Não'}</p>
+                      <p>• Chave PIX: {profile.chave_pix ? '✅ Configurada' : '❌ Não configurada'}</p>
+                    </div>
                   </div>
                 </div>
 
