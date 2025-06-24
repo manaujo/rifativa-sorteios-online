@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Share2, Trophy, ShoppingCart } from "lucide-react";
 import Header from "@/components/Header";
+import type { Database } from "@/integrations/supabase/types";
+
+type StatusBilhete = Database["public"]["Enums"]["status_bilhete"];
 
 const RifaDetalhes = () => {
   const { id } = useParams();
@@ -44,12 +47,12 @@ const RifaDetalhes = () => {
   const reservarBilhetesMutation = useMutation({
     mutationFn: async () => {
       const bilhetes = selectedNumbers.map(numero => ({
-        rifa_id: id,
+        rifa_id: id!,
         numero,
         nome_comprador: compradorInfo.nome,
         cpf: compradorInfo.cpf,
         telefone: compradorInfo.telefone,
-        status: 'reservado'
+        status: 'reservado' as StatusBilhete
       }));
 
       const { error } = await supabase
