@@ -4,28 +4,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user, signIn } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulação de login - substituir por Supabase Auth
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Login realizado com sucesso!",
-        description: "Redirecionando para o painel...",
+        description: "Redirecionando para o dashboard...",
       });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast({
+        title: "Erro no login",
+        description: error.message || "Verifique suas credenciais e tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      // Aqui implementar redirecionamento após integração com Supabase
-    }, 1500);
+    }
   };
 
   return (
@@ -75,12 +94,6 @@ const Login = () => {
                   required
                   className="h-12"
                 />
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <Link to="/esqueci-senha" className="text-primary-600 hover:underline">
-                  Esqueci minha senha
-                </Link>
               </div>
 
               <Button 

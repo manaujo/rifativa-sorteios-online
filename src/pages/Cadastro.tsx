@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Cadastro = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,12 @@ const Cadastro = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user, signUp } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,16 +39,42 @@ const Cadastro = () => {
       return;
     }
 
+    if (!formData.plano) {
+      toast({
+        title: "Erro",
+        description: "Selecione um plano",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulação de cadastro - substituir por Supabase Auth
-    setTimeout(() => {
+    try {
+      const { error } = await signUp(formData.email, formData.password, {
+        nome: formData.nome,
+        plano: formData.plano,
+        chave_pix: formData.chavePix
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao Rifativa!",
+        description: "Verifique seu e-mail para ativar a conta.",
       });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      toast({
+        title: "Erro no cadastro",
+        description: error.message || "Não foi possível criar a conta. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
