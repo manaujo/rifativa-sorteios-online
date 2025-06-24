@@ -21,7 +21,7 @@ const Header = () => {
             <Link to="/campanhas" className="text-gray-600 hover:text-primary-600 transition-colors">
               Campanhas
             </Link>
-            <Link to="/como-funciona" className="text-gray-600 hover:text-primary-600 transition-colors">
+            <Link to="#como-funciona" className="text-gray-600 hover:text-primary-600 transition-colors">
               Como Funciona
             </Link>
           </nav>

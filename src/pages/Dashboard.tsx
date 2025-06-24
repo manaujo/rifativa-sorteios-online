@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, Trophy, Target, User, LogOut } from "lucide-react";
+import { Plus, Trophy, Target, User, LogOut, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -100,6 +100,12 @@ const Dashboard = () => {
             </Link>
             
             <div className="flex items-center space-x-4">
+              <Link to="/minhas-rifas">
+                <Button variant="outline" size="sm">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Minhas Rifas
+                </Button>
+              </Link>
               <Link to="/perfil">
                 <Button variant="outline" size="sm">
                   <User className="w-4 h-4 mr-2" />
