@@ -14,6 +14,12 @@ import Header from "@/components/Header";
 import RankingCompradores from "@/components/campanhas/RankingCompradores";
 import ModalPagamentoPix from "@/components/campanhas/ModalPagamentoPix";
 
+interface Comprador {
+  nome_comprador: string;
+  total_bilhetes: number;
+  total_gasto: number;
+}
+
 const CampanhaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
@@ -56,17 +62,21 @@ const CampanhaDetalhes = () => {
       
       if (error) throw error;
       
-      // Agrupa por comprador
-      const grouped = data.reduce((acc: any, bilhete) => {
+      // Agrupa por comprador com tipagem correta
+      const grouped: Record<string, Comprador> = data.reduce((acc, bilhete) => {
         const nome = bilhete.nome_comprador;
         if (!acc[nome]) {
-          acc[nome] = { nome_comprador: nome, total_bilhetes: 0 };
+          acc[nome] = { 
+            nome_comprador: nome, 
+            total_bilhetes: 0,
+            total_gasto: 0
+          };
         }
         acc[nome].total_bilhetes += bilhete.quantidade;
         return acc;
-      }, {});
+      }, {} as Record<string, Comprador>);
 
-      return Object.values(grouped).sort((a: any, b: any) => b.total_bilhetes - a.total_bilhetes);
+      return Object.values(grouped).sort((a, b) => b.total_bilhetes - a.total_bilhetes);
     },
     enabled: !!id,
   });
