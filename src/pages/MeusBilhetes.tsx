@@ -31,7 +31,7 @@ const MeusBilhetes = () => {
           rifas (
             id,
             titulo,
-            status as rifa_status
+            status
           )
         `)
         .eq("cpf", cpf)
