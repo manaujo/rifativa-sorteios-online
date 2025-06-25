@@ -15,7 +15,9 @@ export type Database = {
           cpf: string
           created_at: string | null
           id: string
+          is_ganhador: boolean | null
           nome_comprador: string
+          numero: number | null
           quantidade: number
           status: Database["public"]["Enums"]["status_bilhete_campanha"] | null
           telefone: string
@@ -25,7 +27,9 @@ export type Database = {
           cpf: string
           created_at?: string | null
           id?: string
+          is_ganhador?: boolean | null
           nome_comprador: string
+          numero?: number | null
           quantidade?: number
           status?: Database["public"]["Enums"]["status_bilhete_campanha"] | null
           telefone: string
@@ -35,7 +39,9 @@ export type Database = {
           cpf?: string
           created_at?: string | null
           id?: string
+          is_ganhador?: boolean | null
           nome_comprador?: string
+          numero?: number | null
           quantidade?: number
           status?: Database["public"]["Enums"]["status_bilhete_campanha"] | null
           telefone?: string
@@ -55,6 +61,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           id: string
+          is_ganhador: boolean | null
           nome_comprador: string | null
           numero: number
           rifa_id: string
@@ -65,6 +72,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           id?: string
+          is_ganhador?: boolean | null
           nome_comprador?: string | null
           numero: number
           rifa_id: string
@@ -75,6 +83,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           id?: string
+          is_ganhador?: boolean | null
           nome_comprador?: string | null
           numero?: number
           rifa_id?: string
@@ -99,6 +108,7 @@ export type Database = {
           id: string
           imagem: string | null
           modo: Database["public"]["Enums"]["modo_campanha"] | null
+          multiplicador_combo: number | null
           preco_bilhete: number
           titulo: string
           user_id: string
@@ -110,6 +120,7 @@ export type Database = {
           id?: string
           imagem?: string | null
           modo?: Database["public"]["Enums"]["modo_campanha"] | null
+          multiplicador_combo?: number | null
           preco_bilhete: number
           titulo: string
           user_id: string
@@ -121,6 +132,7 @@ export type Database = {
           id?: string
           imagem?: string | null
           modo?: Database["public"]["Enums"]["modo_campanha"] | null
+          multiplicador_combo?: number | null
           preco_bilhete?: number
           titulo?: string
           user_id?: string
@@ -173,6 +185,41 @@ export type Database = {
           valor?: number
         }
         Relationships: []
+      }
+      premios_campanha: {
+        Row: {
+          campanha_id: string
+          created_at: string | null
+          descricao: string | null
+          id: string
+          posicao: number
+          titulo: string
+        }
+        Insert: {
+          campanha_id: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          posicao: number
+          titulo: string
+        }
+        Update: {
+          campanha_id?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          posicao?: number
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premios_campanha_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rifas: {
         Row: {
