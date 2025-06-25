@@ -17,6 +17,7 @@ import Campanhas from "./pages/Campanhas";
 import CampanhaDetalhes from "./pages/CampanhaDetalhes";
 import CriarCampanha from "./pages/CriarCampanha";
 import MeusBilhetes from "./pages/MeusBilhetes";
+import PagamentoSucesso from "./pages/PagamentoSucesso";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/campanha/:id" element={<CampanhaDetalhes />} />
           <Route path="/criar-campanha" element={<CriarCampanha />} />
           <Route path="/meus-bilhetes" element={<MeusBilhetes />} />
+          <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

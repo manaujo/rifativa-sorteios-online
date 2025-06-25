@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Share2, Trophy, ShoppingCart } from "lucide-react";
 import Header from "@/components/Header";
-import type { Database } from "@/integrations/supabase/types";
-
-type StatusBilhete = Database["public"]["Enums"]["status_bilhete"];
+import CheckoutButton from "@/components/checkout/CheckoutButton";
 
 const RifaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [compradorInfo, setCompradorInfo] = useState({
     nome: "",
@@ -44,41 +41,6 @@ const RifaDetalhes = () => {
     },
   });
 
-  const reservarBilhetesMutation = useMutation({
-    mutationFn: async () => {
-      const bilhetes = selectedNumbers.map(numero => ({
-        rifa_id: id!,
-        numero,
-        nome_comprador: compradorInfo.nome,
-        cpf: compradorInfo.cpf,
-        telefone: compradorInfo.telefone,
-        status: 'reservado' as StatusBilhete
-      }));
-
-      const { error } = await supabase
-        .from("bilhetes_rifa")
-        .insert(bilhetes);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Bilhetes reservados!",
-        description: "Seus bilhetes foram reservados com sucesso. Efetue o pagamento para confirmá-los.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["rifa", id] });
-      setSelectedNumbers([]);
-      setCompradorInfo({ nome: "", cpf: "", telefone: "" });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao reservar bilhetes",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -101,28 +63,6 @@ const RifaDetalhes = () => {
     } else {
       setSelectedNumbers([...selectedNumbers, numero]);
     }
-  };
-
-  const handleCompra = () => {
-    if (!compradorInfo.nome || !compradorInfo.cpf || !compradorInfo.telefone) {
-      toast({
-        title: "Dados incompletos",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (selectedNumbers.length === 0) {
-      toast({
-        title: "Nenhum número selecionado",
-        description: "Selecione pelo menos um número para continuar.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    reservarBilhetesMutation.mutate();
   };
 
   if (isLoading) {
@@ -336,13 +276,17 @@ const RifaDetalhes = () => {
                       </span>
                     </div>
 
-                    <Button 
+                    <CheckoutButton
+                      valor={totalSelecionado}
+                      quantidade={selectedNumbers.length}
+                      tipo="rifa"
+                      itemId={id!}
+                      compradorInfo={compradorInfo}
+                      disabled={selectedNumbers.length === 0}
                       className="w-full bg-gradient-primary hover:opacity-90"
-                      onClick={handleCompra}
-                      disabled={reservarBilhetesMutation.isPending || selectedNumbers.length === 0}
                     >
-                      {reservarBilhetesMutation.isPending ? "Processando..." : "Reservar Bilhetes"}
-                    </Button>
+                      Comprar Bilhetes
+                    </CheckoutButton>
                   </div>
                 </div>
               </CardContent>

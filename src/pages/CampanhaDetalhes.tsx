@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Share2, Target, ShoppingCart, Users, Trophy, Gift } from "lucide-react";
 import Header from "@/components/Header";
 import RankingCompradores from "@/components/campanhas/RankingCompradores";
-import ModalPagamentoPix from "@/components/campanhas/ModalPagamentoPix";
+import CheckoutButton from "@/components/checkout/CheckoutButton";
 
 interface Comprador {
   nome_comprador: string;
@@ -23,9 +23,7 @@ interface Comprador {
 const CampanhaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [quantidade, setQuantidade] = useState(1);
-  const [showModalPagamento, setShowModalPagamento] = useState(false);
   const [compradorInfo, setCompradorInfo] = useState({
     nome: "",
     cpf: "",
@@ -81,40 +79,6 @@ const CampanhaDetalhes = () => {
     enabled: !!id,
   });
 
-  const comprarBilhetesMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("bilhetes_campanha")
-        .insert({
-          campanha_id: id,
-          nome_comprador: compradorInfo.nome,
-          cpf: compradorInfo.cpf,
-          telefone: compradorInfo.telefone,
-          quantidade: quantidade,
-          status: 'pago'
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Bilhetes confirmados!",
-        description: "Seus bilhetes foram confirmados com sucesso. Boa sorte!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["campanha", id] });
-      queryClient.invalidateQueries({ queryKey: ["campanha-ranking", id] });
-      setQuantidade(1);
-      setCompradorInfo({ nome: "", cpf: "", telefone: "" });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao confirmar bilhetes",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -129,41 +93,6 @@ const CampanhaDetalhes = () => {
         description: "Link da campanha copiado para a área de transferência.",
       });
     }
-  };
-
-  const handleIniciarCompra = () => {
-    if (!compradorInfo.nome || !compradorInfo.cpf || !compradorInfo.telefone) {
-      toast({
-        title: "Dados incompletos",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (quantidade < 1) {
-      toast({
-        title: "Quantidade inválida",
-        description: "Selecione pelo menos 1 bilhete.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!campanha?.users?.chave_pix) {
-      toast({
-        title: "Erro",
-        description: "Esta campanha não possui chave PIX configurada.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setShowModalPagamento(true);
-  };
-
-  const handlePagamentoConfirmado = () => {
-    comprarBilhetesMutation.mutate();
   };
 
   if (isLoading) {
@@ -379,13 +308,17 @@ const CampanhaDetalhes = () => {
                       </div>
                     </div>
 
-                    <Button 
+                    <CheckoutButton
+                      valor={valorTotal}
+                      quantidade={quantidade}
+                      tipo="campanha"
+                      itemId={id!}
+                      compradorInfo={compradorInfo}
+                      disabled={quantidade < 1}
                       className="w-full bg-gradient-primary hover:opacity-90 h-12 text-lg"
-                      onClick={handleIniciarCompra}
-                      disabled={comprarBilhetesMutation.isPending}
                     >
-                      {comprarBilhetesMutation.isPending ? "Processando..." : "Comprar Bilhetes"}
-                    </Button>
+                      Comprar Bilhetes
+                    </CheckoutButton>
                   </div>
                 </div>
               </CardContent>
@@ -393,17 +326,6 @@ const CampanhaDetalhes = () => {
           </div>
         </div>
       </div>
-
-      {/* Modal de Pagamento PIX */}
-      <ModalPagamentoPix
-        isOpen={showModalPagamento}
-        onClose={() => setShowModalPagamento(false)}
-        chavePix={campanha.users?.chave_pix || ""}
-        valor={valorTotal}
-        quantidade={quantidade}
-        campanhaTitulo={campanha.titulo}
-        onPagamentoConfirmado={handlePagamentoConfirmado}
-      />
     </div>
   );
 };
