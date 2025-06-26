@@ -1,24 +1,26 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlanValidation } from "@/hooks/usePlanValidation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, User, Mail, Key, Crown, Trophy, Target, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const Perfil = () => {
   const { user, profile, loading } = useAuth();
+  const { rifasCount, campanhasCount, limits, currentPlan } = usePlanValidation();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [formData, setFormData] = useState({
     nome: profile?.nome || "",
     email: profile?.email || "",
-    plano: profile?.plano || "economico",
     chave_pix: profile?.chave_pix || ""
   });
 
@@ -48,7 +50,6 @@ const Perfil = () => {
         .update({
           nome: formData.nome,
           email: formData.email,
-          plano: formData.plano as any,
           chave_pix: formData.chave_pix
         })
         .eq("id", user.id);
@@ -62,7 +63,6 @@ const Perfil = () => {
         description: "Suas informações foram salvas com sucesso.",
       });
 
-      // Refresh the page to update the profile data
       window.location.reload();
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -79,13 +79,26 @@ const Perfil = () => {
   const getPlanoLabel = (plano: string) => {
     switch (plano) {
       case "economico":
-        return "Econômico - R$ 97,00";
+        return "Econômico";
       case "padrao":
-        return "Padrão - R$ 159,90";
+        return "Padrão";
       case "premium":
-        return "Premium - R$ 499,00";
+        return "Premium";
       default:
         return plano;
+    }
+  };
+
+  const getPlanoColor = (plano: string) => {
+    switch (plano) {
+      case "economico":
+        return "bg-blue-500";
+      case "padrao":
+        return "bg-green-500";
+      case "premium":
+        return "bg-purple-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -110,98 +123,143 @@ const Perfil = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <Card className="shadow-xl border-0">
-            <CardHeader>
-              <CardTitle className="text-2xl">Meu Perfil</CardTitle>
-              <CardDescription>
-                Gerencie suas informações pessoais e configurações
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome Completo</Label>
-                  <Input
-                    id="nome"
-                    type="text"
-                    value={formData.nome}
-                    onChange={(e) => handleInputChange("nome", e.target.value)}
-                    required
-                    className="h-12"
-                  />
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Info Card */}
+          <div className="lg:col-span-1">
+            <Card className="shadow-xl border-0">
+              <CardHeader className="text-center pb-4">
+                <Avatar className="w-24 h-24 mx-auto mb-4">
+                  <AvatarFallback className="text-2xl bg-gradient-primary text-white">
+                    {profile.nome?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <CardTitle className="text-xl">{profile.nome}</CardTitle>
+                <CardDescription>{profile.email}</CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <div className={`w-3 h-3 rounded-full ${getPlanoColor(currentPlan)}`} />
+                    <span className="font-semibold">{getPlanoLabel(currentPlan)}</span>
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                  </div>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    Plano Ativo
+                  </Badge>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    required
-                    className="h-12"
-                  />
-                </div>
+                <Link to="/upgrade" className="block">
+                  <Button className="w-full bg-gradient-primary hover:opacity-90">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Fazer Upgrade
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="plano">Plano Atual</Label>
-                  <Select value={formData.plano} onValueChange={(value) => handleInputChange("plano", value)}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="economico">Econômico - R$ 97,00</SelectItem>
-                      <SelectItem value="padrao">Padrão - R$ 159,90</SelectItem>
-                      <SelectItem value="premium">Premium - R$ 499,00</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-600">
-                    Plano atual: <span className="font-semibold">{getPlanoLabel(profile.plano || "economico")}</span>
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="chave_pix">Chave PIX</Label>
-                  <Input
-                    id="chave_pix"
-                    type="text"
-                    placeholder="CPF, e-mail, telefone ou chave aleatória"
-                    value={formData.chave_pix}
-                    onChange={(e) => handleInputChange("chave_pix", e.target.value)}
-                    className="h-12"
-                  />
-                  <p className="text-sm text-gray-600">
-                    Esta chave será usada para receber os pagamentos das suas rifas e campanhas
-                  </p>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-primary hover:opacity-90 text-lg"
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-              </form>
-
-              {/* Account Stats */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">Estatísticas da Conta</h3>
+            {/* Stats Card */}
+            <Card className="shadow-xl border-0 mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-primary-600" />
+                  Estatísticas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary-600">{profile.total_rifas || 0}</div>
-                    <div className="text-sm text-gray-600">Rifas Criadas</div>
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-xl font-bold text-blue-600">{rifasCount}</div>
+                    <div className="text-xs text-blue-600">Rifas</div>
+                    <div className="text-xs text-gray-500">{rifasCount}/{limits.rifas}</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary-600">{profile.total_campanhas || 0}</div>
-                    <div className="text-sm text-gray-600">Campanhas Criadas</div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-xl font-bold text-green-600">{campanhasCount}</div>
+                    <div className="text-xs text-green-600">Campanhas</div>
+                    <div className="text-xs text-gray-500">{campanhasCount}/{limits.campanhas}</div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Form */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-xl border-0">
+              <CardHeader>
+                <CardTitle className="text-2xl flex items-center">
+                  <User className="w-6 h-6 mr-2" />
+                  Informações Pessoais
+                </CardTitle>
+                <CardDescription>
+                  Gerencie suas informações pessoais e configurações
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome" className="flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        Nome Completo
+                      </Label>
+                      <Input
+                        id="nome"
+                        type="text"
+                        value={formData.nome}
+                        onChange={(e) => handleInputChange("nome", e.target.value)}
+                        required
+                        className="h-12"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center">
+                        <Mail className="w-4 h-4 mr-2" />
+                        E-mail
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        required
+                        className="h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="chave_pix" className="flex items-center">
+                      <Key className="w-4 h-4 mr-2" />
+                      Chave PIX
+                    </Label>
+                    <Input
+                      id="chave_pix"
+                      type="text"
+                      placeholder="CPF, e-mail, telefone ou chave aleatória"
+                      value={formData.chave_pix}
+                      onChange={(e) => handleInputChange("chave_pix", e.target.value)}
+                      className="h-12"
+                    />
+                    <p className="text-sm text-gray-600 flex items-start">
+                      <Key className="w-4 h-4 mr-1 mt-0.5 text-gray-400" />
+                      Esta chave será usada para receber os pagamentos das suas rifas e campanhas
+                    </p>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-primary hover:opacity-90 text-lg"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

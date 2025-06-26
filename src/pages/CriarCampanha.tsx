@@ -1,6 +1,6 @@
-
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlanValidation } from "@/hooks/usePlanValidation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const CriarCampanha = () => {
   const { user, profile, loading } = useAuth();
+  const { canCreateCampanha, campanhasCount, limits } = usePlanValidation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
@@ -38,6 +39,53 @@ const CriarCampanha = () => {
 
   if (!user || !profile) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!canCreateCampanha) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <Link to="/dashboard" className="flex items-center space-x-2 text-primary-600 hover:text-primary-700">
+                <ArrowLeft className="w-5 h-5" />
+                <span>Voltar ao Dashboard</span>
+              </Link>
+              
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">R</span>
+                </div>
+                <span className="text-2xl font-bold gradient-text">Rifativa</span>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Card className="shadow-xl border-0">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Limite de Campanhas Atingido</CardTitle>
+                <CardDescription>
+                  Você já criou {campanhasCount} de {limits.campanhas} campanhas permitidas no seu plano atual.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-gray-600">
+                  Para criar mais campanhas, faça upgrade do seu plano e tenha acesso a mais recursos.
+                </p>
+                <Link to="/#planos">
+                  <Button className="bg-gradient-primary hover:opacity-90">
+                    Fazer Upgrade do Plano
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -107,7 +155,6 @@ const CriarCampanha = () => {
     try {
       let imageUrl = null;
       
-      // Upload image if provided
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
         if (!imageUrl) {
@@ -115,7 +162,6 @@ const CriarCampanha = () => {
         }
       }
 
-      // Create campanha
       const { error: campanhaError } = await supabase
         .from("campanhas")
         .insert({
@@ -177,7 +223,7 @@ const CriarCampanha = () => {
             <CardHeader>
               <CardTitle className="text-2xl">Criar Nova Campanha</CardTitle>
               <CardDescription>
-                Preencha os dados para criar sua campanha de arrecadação
+                Preencha os dados para criar sua campanha de arrecadação ({campanhasCount}/{limits.campanhas} campanhas criadas)
               </CardDescription>
             </CardHeader>
             <CardContent>

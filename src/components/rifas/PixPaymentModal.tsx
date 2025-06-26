@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -51,7 +50,6 @@ const PixPaymentModal = ({
     setIsSubmitting(true);
 
     try {
-      // Criar registro do pagamento
       const { error } = await supabase.from("pagamentos").insert({
         tipo: tipo,
         referencia_id: itemId,
@@ -93,7 +91,7 @@ const PixPaymentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Pagamento via PIX</DialogTitle>
           <DialogDescription>
@@ -101,53 +99,56 @@ const PixPaymentModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome Completo</Label>
+            <Label htmlFor="nome" className="text-sm">Nome Completo</Label>
             <Input
               id="nome"
               type="text"
               value={compradorInfo.nome}
               onChange={(e) => setCompradorInfo(prev => ({ ...prev, nome: e.target.value }))}
               required
+              className="h-10"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cpf">CPF</Label>
+            <Label htmlFor="cpf" className="text-sm">CPF</Label>
             <Input
               id="cpf"
               type="text"
               value={compradorInfo.cpf}
               onChange={(e) => setCompradorInfo(prev => ({ ...prev, cpf: e.target.value }))}
               required
+              className="h-10"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="telefone">Telefone</Label>
+            <Label htmlFor="telefone" className="text-sm">Telefone</Label>
             <Input
               id="telefone"
               type="text"
               value={compradorInfo.telefone}
               onChange={(e) => setCompradorInfo(prev => ({ ...prev, telefone: e.target.value }))}
               required
+              className="h-10"
             />
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold mb-2">Resumo do Pagamento</h4>
-            <div className="text-sm space-y-1">
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <h4 className="font-semibold mb-2 text-sm">Resumo do Pagamento</h4>
+            <div className="text-xs space-y-1">
               <p><strong>{tituloItem}</strong></p>
               <p>Quantidade: {quantidade}</p>
               <p>Valor unitário: R$ {(valor / 100).toFixed(2)}</p>
-              <p className="text-lg font-bold">Total: R$ {(valorTotal / 100).toFixed(2)}</p>
+              <p className="text-base font-bold">Total: R$ {(valorTotal / 100).toFixed(2)}</p>
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+          <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold">Chave PIX:</span>
+              <span className="font-semibold text-sm">Chave PIX:</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -157,23 +158,23 @@ const PixPaymentModal = ({
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
-            <p className="font-mono text-sm bg-white p-2 rounded border break-all">
+            <p className="font-mono text-xs bg-white p-2 rounded border break-all">
               {chavePix}
             </p>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm">
+          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs">
             <p className="flex items-start">
-              <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-yellow-600" />
+              <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-yellow-600 flex-shrink-0" />
               Após realizar o pagamento, seus bilhetes serão confirmados automaticamente.
             </p>
           </div>
 
-          <div className="flex space-x-2">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex space-x-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-10">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="flex-1">
+            <Button type="submit" disabled={isSubmitting} className="flex-1 h-10">
               {isSubmitting ? "Processando..." : "Confirmar Dados"}
             </Button>
           </div>
