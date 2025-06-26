@@ -44,9 +44,9 @@ function App() {
               <Route path="/criar-rifa" element={<CriarRifa />} />
               <Route path="/criar-campanha" element={<CriarCampanha />} />
               <Route path="/rifas" element={<Rifas />} />
-              <Route path="/rifas/:id" element={<RifaDetalhes />} />
+              <Route path="/rifa/:id" element={<RifaDetalhes />} />
               <Route path="/campanhas" element={<Campanhas />} />
-              <Route path="/campanhas/:id" element={<CampanhaDetalhes />} />
+              <Route path="/campanha/:id" element={<CampanhaDetalhes />} />
               <Route path="/minhas-rifas" element={<MinhasRifas />} />
               <Route path="/meus-bilhetes" element={<MeusBilhetes />} />
               <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
