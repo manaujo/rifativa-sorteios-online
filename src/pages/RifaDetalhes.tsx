@@ -3,24 +3,26 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Share2, Trophy, Users, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Trophy, ShoppingCart } from "lucide-react";
 import Header from "@/components/Header";
-import CheckoutButton from "@/components/checkout/CheckoutButton";
+import GridNumerosRifa from "@/components/rifas/GridNumerosRifa";
+import PixPaymentModal from "@/components/rifas/PixPaymentModal";
 
 const RifaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
+  const [numerosSelecionados, setNumerosSelecionados] = useState<number[]>([]);
+  const [showPixModal, setShowPixModal] = useState(false);
   const [compradorInfo, setCompradorInfo] = useState({
     nome: "",
     cpf: "",
-    telefone: "",
+    telefone: ""
   });
 
   const { data: rifa, isLoading } = useQuery({
@@ -30,8 +32,8 @@ const RifaDetalhes = () => {
         .from("rifas")
         .select(`
           *,
-          users!inner(nome),
-          bilhetes_rifa(numero, status)
+          users!inner(nome, chave_pix),
+          bilhetes_rifa(numero, status, nome_comprador, is_ganhador)
         `)
         .eq("id", id)
         .single();
@@ -39,6 +41,7 @@ const RifaDetalhes = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!id,
   });
 
   const handleShare = () => {
@@ -57,12 +60,26 @@ const RifaDetalhes = () => {
     }
   };
 
-  const toggleNumber = (numero: number) => {
-    if (selectedNumbers.includes(numero)) {
-      setSelectedNumbers(selectedNumbers.filter(n => n !== numero));
-    } else {
-      setSelectedNumbers([...selectedNumbers, numero]);
+  const handleComprar = () => {
+    if (numerosSelecionados.length === 0) {
+      toast({
+        title: "Selecione os números",
+        description: "Escolha pelo menos um número para participar da rifa.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    if (!compradorInfo.nome || !compradorInfo.cpf || !compradorInfo.telefone) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowPixModal(true);
   };
 
   if (isLoading) {
@@ -81,19 +98,22 @@ const RifaDetalhes = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Rifa não encontrada</div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">Rifa não encontrada</h1>
+            <Link to="/rifas">
+              <Button>Ver outras rifas</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  const bilhetesOcupados = rifa.bilhetes_rifa?.map((b: any) => b.numero) || [];
-  const bilhetesDisponiveis = Array.from(
-    { length: rifa.quantidade_bilhetes }, 
-    (_, i) => i + 1
-  ).filter(num => !bilhetesOcupados.includes(num));
-
-  const totalSelecionado = selectedNumbers.length * Number(rifa.valor_bilhete);
+  const bilhetesVendidos = rifa.bilhetes_rifa?.filter(
+    (b: any) => b.status === "confirmado"
+  ).length || 0;
+  const porcentagemVendida = (bilhetesVendidos / rifa.quantidade_bilhetes) * 100;
+  const valorTotal = numerosSelecionados.length * Number(rifa.valor_bilhete);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -108,23 +128,25 @@ const RifaDetalhes = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Informações da Rifa */}
-          <div className="lg:col-span-2">
+          {/* Detalhes da Rifa */}
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-green-100 text-green-800">
+                <div className="flex items-center justify-between mb-4">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                     <Trophy className="w-3 h-3 mr-1" />
-                    Ativa
+                    {rifa.status === 'ativa' ? 'Ativa' : 'Encerrada'}
                   </Badge>
-                  <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Button variant="ghost" size="sm" onClick={handleShare}>
                     <Share2 className="w-4 h-4 mr-2" />
                     Compartilhar
                   </Button>
                 </div>
                 
-                <CardTitle className="text-2xl">{rifa.titulo}</CardTitle>
-                <p className="text-gray-600">Por: {rifa.users?.nome}</p>
+                <CardTitle className="text-3xl">{rifa.titulo}</CardTitle>
+                <CardDescription className="text-lg">
+                  Por: {rifa.users?.nome}
+                </CardDescription>
               </CardHeader>
 
               <CardContent>
@@ -139,161 +161,129 @@ const RifaDetalhes = () => {
                 )}
 
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Descrição</h3>
-                    <p className="text-gray-700">{rifa.descricao}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <p className="text-gray-700 leading-relaxed">{rifa.descricao}</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-primary-600">
+                      <div className="text-2xl font-bold text-primary-600">
                         R$ {Number(rifa.valor_bilhete).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-600">por bilhete</p>
+                      </div>
+                      <div className="text-sm text-gray-600">Por bilhete</div>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold">{rifa.quantidade_bilhetes}</p>
-                      <p className="text-sm text-gray-600">total de bilhetes</p>
+                      <div className="text-2xl font-bold text-gray-800">
+                        {rifa.quantidade_bilhetes}
+                      </div>
+                      <div className="text-sm text-gray-600">Total de bilhetes</div>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
-                        {bilhetesOcupados.length}
-                      </p>
-                      <p className="text-sm text-gray-600">vendidos</p>
+                      <div className="text-2xl font-bold text-green-600">
+                        {bilhetesVendidos}
+                      </div>
+                      <div className="text-sm text-gray-600">Vendidos</div>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">
-                        {bilhetesDisponiveis.length}
-                      </p>
-                      <p className="text-sm text-gray-600">disponíveis</p>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {porcentagemVendida.toFixed(1)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Progresso</div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Seleção de Números */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Escolha seus números</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Clique nos números para selecioná-los. Números em cinza já foram vendidos.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-10 gap-2">
-                  {Array.from({ length: rifa.quantidade_bilhetes }, (_, i) => i + 1).map(numero => {
-                    const isOcupado = bilhetesOcupados.includes(numero);
-                    const isSelecionado = selectedNumbers.includes(numero);
-                    
-                    return (
-                      <Button
-                        key={numero}
-                        variant={isSelecionado ? "default" : "outline"}
-                        size="sm"
-                        disabled={isOcupado}
-                        onClick={() => toggleNumber(numero)}
-                        className={`
-                          h-10 w-full ${
-                            isOcupado 
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                              : isSelecionado 
-                                ? 'bg-primary-600 text-white' 
-                                : 'hover:bg-primary-50'
-                          }
-                        `}
-                      >
-                        {String(numero).padStart(2, '0')}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                {selectedNumbers.length > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>Números selecionados:</strong> {selectedNumbers.sort((a, b) => a - b).join(', ')}
-                    </p>
-                    <p className="text-lg font-bold text-blue-800 mt-1">
-                      Total: R$ {totalSelecionado.toFixed(2)}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <GridNumerosRifa
+              bilhetes={rifa.bilhetes_rifa || []}
+              onNumeroSelect={setNumerosSelecionados}
+              rifaEncerrada={rifa.status !== 'ativa'}
+              numeroGanhador={rifa.bilhete_premiado}
+            />
           </div>
 
           {/* Formulário de Compra */}
-          <div>
+          <div className="space-y-6">
             <Card className="sticky top-4">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Finalizar Compra
-                </CardTitle>
+                <CardTitle>Participar da Rifa</CardTitle>
+                <CardDescription>
+                  Preencha seus dados e escolha os números
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="nome">Nome completo *</Label>
-                    <Input
-                      id="nome"
-                      value={compradorInfo.nome}
-                      onChange={(e) => setCompradorInfo(prev => ({...prev, nome: e.target.value}))}
-                      placeholder="Seu nome completo"
-                    />
-                  </div>
+              
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome Completo</Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    value={compradorInfo.nome}
+                    onChange={(e) => setCompradorInfo(prev => ({ ...prev, nome: e.target.value }))}
+                    placeholder="Seu nome completo"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="cpf">CPF *</Label>
-                    <Input
-                      id="cpf"
-                      value={compradorInfo.cpf}
-                      onChange={(e) => setCompradorInfo(prev => ({...prev, cpf: e.target.value}))}
-                      placeholder="000.000.000-00"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    type="text"
+                    value={compradorInfo.cpf}
+                    onChange={(e) => setCompradorInfo(prev => ({ ...prev, cpf: e.target.value }))}
+                    placeholder="000.000.000-00"
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="telefone">Telefone *</Label>
-                    <Input
-                      id="telefone"
-                      value={compradorInfo.telefone}
-                      onChange={(e) => setCompradorInfo(prev => ({...prev, telefone: e.target.value}))}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telefone">Telefone</Label>
+                  <Input
+                    id="telefone"
+                    type="text"
+                    value={compradorInfo.telefone}
+                    onChange={(e) => setCompradorInfo(prev => ({ ...prev, telefone: e.target.value }))}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span>Bilhetes selecionados:</span>
-                      <span className="font-bold">{selectedNumbers.length}</span>
+                {numerosSelecionados.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">Resumo da Compra</h4>
+                    <div className="text-sm space-y-1">
+                      <p>Números: {numerosSelecionados.sort((a, b) => a - b).join(", ")}</p>
+                      <p>Quantidade: {numerosSelecionados.length} bilhete(s)</p>
+                      <p>Valor unitário: R$ {Number(rifa.valor_bilhete).toFixed(2)}</p>
+                      <p className="text-lg font-bold">Total: R$ {valorTotal.toFixed(2)}</p>
                     </div>
-                    <div className="flex justify-between items-center mb-4">
-                      <span>Valor total:</span>
-                      <span className="text-xl font-bold text-primary-600">
-                        R$ {totalSelecionado.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <CheckoutButton
-                      valor={totalSelecionado}
-                      quantidade={selectedNumbers.length}
-                      tipo="rifa"
-                      itemId={id!}
-                      compradorInfo={compradorInfo}
-                      disabled={selectedNumbers.length === 0}
-                      className="w-full bg-gradient-primary hover:opacity-90"
-                    >
-                      Comprar Bilhetes
-                    </CheckoutButton>
                   </div>
+                )}
+
+                <Button 
+                  onClick={handleComprar}
+                  className="w-full bg-gradient-primary hover:opacity-90"
+                  disabled={rifa.status !== 'ativa'}
+                >
+                  {rifa.status === 'ativa' ? 'Comprar via PIX' : 'Rifa Encerrada'}
+                </Button>
+
+                <div className="text-xs text-gray-500 text-center">
+                  🔒 Pagamento seguro via PIX
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      <PixPaymentModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        valor={Math.round(Number(rifa.valor_bilhete) * 100)}
+        quantidade={numerosSelecionados.length}
+        tipo="rifa"
+        itemId={rifa.id}
+        chavePix={rifa.users?.chave_pix || ""}
+        tituloItem={rifa.titulo}
+      />
     </div>
   );
 };

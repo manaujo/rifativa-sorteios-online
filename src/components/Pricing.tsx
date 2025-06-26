@@ -1,14 +1,24 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Pricing = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
   const plans = [
     {
+      id: "economico",
       name: "Econômico",
       price: "R$ 97,00",
-      period: "por campanha",
+      stripePrice: "price_economico_monthly", // Substitua pelos seus price IDs reais
+      period: "por mês",
       popular: false,
       features: [
         "Até 2 rifas",
@@ -20,9 +30,11 @@ const Pricing = () => {
       ]
     },
     {
+      id: "padrao",
       name: "Padrão",
       price: "R$ 159,90",
-      period: "por campanha",
+      stripePrice: "price_padrao_monthly",
+      period: "por mês",
       popular: true,
       features: [
         "Até 5 rifas",
@@ -35,9 +47,11 @@ const Pricing = () => {
       ]
     },
     {
+      id: "premium",
       name: "Premium",
       price: "R$ 499,00",
-      period: "por campanha",
+      stripePrice: "price_premium_monthly",
+      period: "por mês",
       originalPrice: "R$ 999,90",
       popular: false,
       features: [
@@ -52,6 +66,47 @@ const Pricing = () => {
       ]
     }
   ];
+
+  const handleSubscribe = async (planId: string, stripePriceId: string) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login para assinar um plano.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(planId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
+        body: { 
+          priceId: stripePriceId,
+          planId: planId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast({
+          title: "Redirecionando para pagamento",
+          description: "Uma nova aba foi aberta para o pagamento da assinatura.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro no checkout:', error);
+      toast({
+        title: "Erro no checkout",
+        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   return (
     <section id="planos" className="py-20 bg-white">
@@ -111,24 +166,38 @@ const Pricing = () => {
                 ))}
               </ul>
 
-              <Link to="/cadastro" className="block">
+              {user ? (
                 <Button 
+                  onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
+                  disabled={isLoading === plan.id}
                   className={`w-full py-3 text-lg ${
                     plan.popular 
                       ? 'bg-gradient-primary hover:opacity-90' 
                       : 'bg-gray-800 hover:bg-gray-700'
                   }`}
                 >
-                  Escolher {plan.name}
+                  {isLoading === plan.id ? 'Processando...' : `Assinar ${plan.name}`}
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/login" className="block">
+                  <Button 
+                    className={`w-full py-3 text-lg ${
+                      plan.popular 
+                        ? 'bg-gradient-primary hover:opacity-90' 
+                        : 'bg-gray-800 hover:bg-gray-700'
+                    }`}
+                  >
+                    Fazer Login para Assinar
+                  </Button>
+                </Link>
+              )}
             </div>
           ))}
         </div>
 
         <div className="text-center mt-12">
           <p className="text-gray-600">
-            🔒 Pagamento 100% seguro • ✅ Sem mensalidades • 🚀 Ativação imediata
+            🔒 Pagamento 100% seguro • ✅ Cancele quando quiser • 🚀 Ativação imediata
           </p>
         </div>
       </div>

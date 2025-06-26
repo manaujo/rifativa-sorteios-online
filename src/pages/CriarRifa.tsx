@@ -114,11 +114,11 @@ const CriarRifa = () => {
         throw rifaError;
       }
 
-      // Create bilhetes for the rifa
+      // Create bilhetes for the rifa - TODOS COMO DISPONÍVEL
       const bilhetes = Array.from({ length: parseInt(formData.quantidade_bilhetes) }, (_, i) => ({
         rifa_id: rifaData.id,
         numero: i + 1,
-        status: "disponivel" as const
+        status: "disponivel" as const // Garantir que todos sejam criados como disponível
       }));
 
       const { error: bilhetesError } = await supabase
