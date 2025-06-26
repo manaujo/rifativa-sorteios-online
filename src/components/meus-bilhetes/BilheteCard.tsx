@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Ticket, Crown, Calendar, Clock } from "lucide-react";
+import { Trophy, Ticket, Crown, Clock } from "lucide-react";
 
 interface BilheteCardProps {
   bilhete: {
@@ -14,7 +14,6 @@ interface BilheteCardProps {
     titulo: string;
     tipo: "rifa" | "campanha";
     rifa_status?: string;
-    data_sorteio?: string;
   };
 }
 
@@ -110,15 +109,6 @@ const BilheteCard = ({ bilhete }: BilheteCardProps) => {
             </p>
           </div>
         </div>
-
-        {bilhete.tipo === "rifa" && bilhete.data_sorteio && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              <strong>Data do Sorteio:</strong> {formatDate(bilhete.data_sorteio)}
-            </p>
-          </div>
-        )}
         
         {bilhete.tipo === "rifa" && bilhete.rifa_status === "encerrada" && !bilhete.is_ganhador && (
           <div className="mt-4 p-3 bg-gray-100 rounded-lg">

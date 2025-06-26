@@ -27,8 +27,7 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
           rifas (
             id,
             titulo,
-            status,
-            data_sorteio
+            status
           )
         `)
         .eq("cpf", cpf)
@@ -80,7 +79,6 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
           titulo: bilhete.rifas?.titulo || "Rifa removida",
           tipo: "rifa" as const,
           rifa_status: bilhete.rifas?.status,
-          data_sorteio: bilhete.rifas?.data_sorteio,
           item_id: bilhete.rifas?.id
         })),
         ...(bilhetesCampanha || []).map(bilhete => ({

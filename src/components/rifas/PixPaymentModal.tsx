@@ -53,7 +53,7 @@ const PixPaymentModal = ({
         nome_comprador: compradorInfo.nome,
         cpf: compradorInfo.cpf,
         telefone: compradorInfo.telefone,
-        status: "reservado"
+        status: "reservado" as const
       }));
 
       const { error } = await supabase.from("bilhetes_rifa").insert(bilhetesParaInserir);
