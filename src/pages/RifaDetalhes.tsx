@@ -278,11 +278,11 @@ const RifaDetalhes = () => {
         isOpen={showPixModal}
         onClose={() => setShowPixModal(false)}
         valor={Math.round(Number(rifa.valor_bilhete) * 100)}
-        quantidade={numerosSelecionados.length}
-        tipo="rifa"
-        itemId={rifa.id}
+        numerosSelecionados={numerosSelecionados}
+        rifaId={rifa.id}
         chavePix={rifa.users?.chave_pix || ""}
-        tituloItem={rifa.titulo}
+        tituloRifa={rifa.titulo}
+        compradorInfo={compradorInfo}
       />
     </div>
   );

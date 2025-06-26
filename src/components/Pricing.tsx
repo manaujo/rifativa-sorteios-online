@@ -1,8 +1,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Check, Crown, Zap, Star } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -10,64 +11,63 @@ import { useToast } from "@/hooks/use-toast";
 const Pricing = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const plans = [
     {
       id: "economico",
       name: "Econômico",
-      price: "R$ 97,00",
-      stripePrice: "price_economico_monthly", // Substitua pelos seus price IDs reais
-      period: "por mês",
-      popular: false,
+      price: "R$ 29,90",
+      priceId: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // Substitua pelo price ID real do Stripe
+      description: "Ideal para quem está começando",
       features: [
         "Até 2 rifas",
         "Até 2 campanhas", 
         "Até 100 mil bilhetes",
-        "PIX direto para você",
-        "Painel de controle",
-        "Suporte por email"
-      ]
+        "Suporte por email",
+        "Painel básico"
+      ],
+      popular: false,
+      color: "border-blue-200"
     },
     {
       id: "padrao",
       name: "Padrão",
-      price: "R$ 159,90",
-      stripePrice: "price_padrao_monthly",
-      period: "por mês",
-      popular: true,
+      price: "R$ 59,90",
+      priceId: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // Substitua pelo price ID real do Stripe
+      description: "Para quem quer crescer",
       features: [
         "Até 5 rifas",
         "Até 5 campanhas",
         "Até 500 mil bilhetes",
-        "PIX direto para você",
-        "Painel avançado",
         "Suporte prioritário",
+        "Painel avançado",
         "Relatórios detalhados"
-      ]
+      ],
+      popular: true,
+      color: "border-green-200"
     },
     {
       id: "premium",
       name: "Premium",
-      price: "R$ 499,00",
-      stripePrice: "price_premium_monthly",
-      period: "por mês",
-      originalPrice: "R$ 999,90",
-      popular: false,
+      price: "R$ 99,90",
+      priceId: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // Substitua pelo price ID real do Stripe
+      description: "Para profissionais",
       features: [
         "Até 10 rifas",
         "Até 10 campanhas",
         "Até 1 milhão de bilhetes",
-        "Valor ilimitado por bilhete",
-        "PIX direto para você",
-        "Painel premium",
         "Suporte 24/7",
-        "API personalizada"
-      ]
+        "Painel premium",
+        "API personalizada",
+        "Integração WhatsApp"
+      ],
+      popular: false,
+      color: "border-purple-200"
     }
   ];
 
-  const handleSubscribe = async (planId: string, stripePriceId: string) => {
+  const handleSelectPlan = async (planId: string, priceId: string) => {
     if (!user) {
       toast({
         title: "Login necessário",
@@ -77,12 +77,12 @@ const Pricing = () => {
       return;
     }
 
-    setIsLoading(planId);
+    setLoadingPlan(planId);
 
     try {
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
-        body: { 
-          priceId: stripePriceId,
+        body: {
+          priceId: priceId,
           planId: planId
         }
       });
@@ -92,112 +92,109 @@ const Pricing = () => {
       if (data?.url) {
         window.open(data.url, '_blank');
         toast({
-          title: "Redirecionando para pagamento",
-          description: "Uma nova aba foi aberta para o pagamento da assinatura.",
+          title: "Redirecionando para checkout",
+          description: "Uma nova aba foi aberta para o pagamento.",
         });
       }
     } catch (error: any) {
-      console.error('Erro no checkout:', error);
+      console.error('Erro ao criar checkout:', error);
       toast({
         title: "Erro no checkout",
         description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(null);
+      setLoadingPlan(null);
     }
   };
 
   return (
-    <section id="planos" className="py-20 bg-white">
+    <section id="planos" className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            💳 Nossos <span className="gradient-text">Planos</span>
+          <h2 className="text-4xl font-bold mb-4 gradient-text">
+            Escolha seu Plano
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Escolha o plano ideal para o tamanho da sua rifa ou campanha
+            Comece hoje mesmo a criar suas rifas e campanhas com nossa plataforma
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
-            <div 
-              key={index}
-              className={`relative bg-white rounded-2xl p-8 shadow-lg border-2 card-hover animate-fade-in ${
-                plan.popular 
-                  ? 'border-primary-500 ring-4 ring-primary-100 scale-105' 
-                  : 'border-gray-200'
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan) => (
+            <Card 
+              key={plan.id} 
+              className={`relative hover:shadow-xl transition-all duration-300 ${plan.color} ${
+                plan.popular ? 'ring-2 ring-green-500 scale-105' : ''
               }`}
-              style={{ animationDelay: `${index * 0.1}s` }}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-gradient-primary text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
-                    <Star className="w-4 h-4" />
-                    <span>Mais Popular</span>
-                  </div>
+                  <Badge className="bg-green-500 text-white px-6 py-1">
+                    <Star className="w-4 h-4 mr-1" />
+                    Mais Popular
+                  </Badge>
                 </div>
               )}
 
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2 text-gray-800">
-                  {plan.name}
-                </h3>
-                <div className="mb-2">
-                  {plan.originalPrice && (
-                    <span className="text-gray-400 line-through text-lg mr-2">
-                      {plan.originalPrice}
-                    </span>
-                  )}
+              <CardHeader className="text-center pb-8 pt-8">
+                <div className="flex justify-center mb-4">
+                  {plan.id === 'economico' && <Zap className="w-12 h-12 text-blue-500" />}
+                  {plan.id === 'padrao' && <Crown className="w-12 h-12 text-green-500" />}
+                  {plan.id === 'premium' && <Star className="w-12 h-12 text-purple-500" />}
+                </div>
+                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                <CardDescription className="text-gray-600">
+                  {plan.description}
+                </CardDescription>
+                <div className="mt-4">
                   <span className="text-4xl font-bold gradient-text">
                     {plan.price}
                   </span>
+                  <span className="text-gray-500">/mês</span>
                 </div>
-                <p className="text-gray-600">{plan.period}</p>
-              </div>
+              </CardHeader>
 
-              <ul className="space-y-4 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-success-500 flex-shrink-0" />
-                    <span className="text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+              <CardContent>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
 
-              {user ? (
                 <Button 
-                  onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
-                  disabled={isLoading === plan.id}
-                  className={`w-full py-3 text-lg ${
+                  className={`w-full ${
                     plan.popular 
                       ? 'bg-gradient-primary hover:opacity-90' 
                       : 'bg-gray-800 hover:bg-gray-700'
                   }`}
+                  size="lg"
+                  onClick={() => handleSelectPlan(plan.id, plan.priceId)}
+                  disabled={loadingPlan === plan.id}
                 >
-                  {isLoading === plan.id ? 'Processando...' : `Assinar ${plan.name}`}
+                  {loadingPlan === plan.id ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Processando...
+                    </>
+                  ) : (
+                    `Escolher ${plan.name}`
+                  )}
                 </Button>
-              ) : (
-                <Link to="/login" className="block">
-                  <Button 
-                    className={`w-full py-3 text-lg ${
-                      plan.popular 
-                        ? 'bg-gradient-primary hover:opacity-90' 
-                        : 'bg-gray-800 hover:bg-gray-700'
-                    }`}
-                  >
-                    Fazer Login para Assinar
-                  </Button>
-                </Link>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
         <div className="text-center mt-12">
           <p className="text-gray-600">
-            🔒 Pagamento 100% seguro • ✅ Cancele quando quiser • 🚀 Ativação imediata
+            Todos os planos incluem suporte técnico e atualizações gratuitas
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Cancele a qualquer momento • Sem taxa de setup • Pagamento seguro
           </p>
         </div>
       </div>

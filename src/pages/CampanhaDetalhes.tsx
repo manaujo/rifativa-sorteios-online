@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Share2, Target, ShoppingCart, Users, Trophy, Gift } from "lucide-react";
 import Header from "@/components/Header";
 import RankingCompradores from "@/components/campanhas/RankingCompradores";
-import CheckoutButton from "@/components/checkout/CheckoutButton";
+import ModalPagamentoPix from "@/components/campanhas/ModalPagamentoPix";
 
 interface Comprador {
   nome_comprador: string;
@@ -24,6 +24,7 @@ const CampanhaDetalhes = () => {
   const { id } = useParams();
   const { toast } = useToast();
   const [quantidade, setQuantidade] = useState(1);
+  const [showPixModal, setShowPixModal] = useState(false);
   const [compradorInfo, setCompradorInfo] = useState({
     nome: "",
     cpf: "",
@@ -93,6 +94,35 @@ const CampanhaDetalhes = () => {
         description: "Link da campanha copiado para a área de transferência.",
       });
     }
+  };
+
+  const handleComprar = () => {
+    if (quantidade < 1) {
+      toast({
+        title: "Quantidade inválida",
+        description: "Escolha pelo menos 1 bilhete.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!compradorInfo.nome || !compradorInfo.cpf || !compradorInfo.telefone) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowPixModal(true);
+  };
+
+  const handlePagamentoConfirmado = () => {
+    toast({
+      title: "Pagamento registrado!",
+      description: "Seus bilhetes foram reservados. Aguarde a confirmação do criador da campanha.",
+    });
   };
 
   if (isLoading) {
@@ -308,17 +338,13 @@ const CampanhaDetalhes = () => {
                       </div>
                     </div>
 
-                    <CheckoutButton
-                      valor={valorTotal}
-                      quantidade={quantidade}
-                      tipo="campanha"
-                      itemId={id!}
-                      compradorInfo={compradorInfo}
+                    <Button
+                      onClick={handleComprar}
                       disabled={quantidade < 1}
                       className="w-full bg-gradient-primary hover:opacity-90 h-12 text-lg"
                     >
-                      Comprar Bilhetes
-                    </CheckoutButton>
+                      Comprar via PIX
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -326,6 +352,18 @@ const CampanhaDetalhes = () => {
           </div>
         </div>
       </div>
+
+      <ModalPagamentoPix
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        chavePix={campanha.users?.chave_pix || ""}
+        valor={Math.round(Number(campanha.preco_bilhete) * 100)}
+        quantidade={quantidade}
+        campanhaTitulo={campanha.titulo}
+        campanhaId={id!}
+        compradorInfo={compradorInfo}
+        onPagamentoConfirmado={handlePagamentoConfirmado}
+      />
     </div>
   );
 };

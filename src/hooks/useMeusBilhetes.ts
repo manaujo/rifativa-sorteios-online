@@ -12,6 +12,8 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
   return useQuery({
     queryKey: ["meus-bilhetes", cpf, telefone],
     queryFn: async () => {
+      console.log("Buscando bilhetes para:", { cpf, telefone });
+      
       // Busca bilhetes de rifas
       const { data: bilhetesRifa, error: errorRifa } = await supabase
         .from("bilhetes_rifa")
@@ -21,16 +23,21 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
           status,
           is_ganhador,
           created_at,
+          nome_comprador,
           rifas (
             id,
             titulo,
-            status
+            status,
+            data_sorteio
           )
         `)
         .eq("cpf", cpf)
         .eq("telefone", telefone);
 
-      if (errorRifa) throw errorRifa;
+      if (errorRifa) {
+        console.error("Erro ao buscar bilhetes de rifa:", errorRifa);
+        throw errorRifa;
+      }
 
       // Busca bilhetes de campanhas
       const { data: bilhetesCampanha, error: errorCampanha } = await supabase
@@ -42,6 +49,7 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
           status,
           is_ganhador,
           created_at,
+          nome_comprador,
           campanhas (
             id,
             titulo
@@ -50,7 +58,15 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
         .eq("cpf", cpf)
         .eq("telefone", telefone);
 
-      if (errorCampanha) throw errorCampanha;
+      if (errorCampanha) {
+        console.error("Erro ao buscar bilhetes de campanha:", errorCampanha);
+        throw errorCampanha;
+      }
+
+      console.log("Bilhetes encontrados:", { 
+        rifas: bilhetesRifa?.length || 0, 
+        campanhas: bilhetesCampanha?.length || 0 
+      });
 
       // Combina e formata os resultados
       const resultados = [
@@ -64,6 +80,7 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
           titulo: bilhete.rifas?.titulo || "Rifa removida",
           tipo: "rifa" as const,
           rifa_status: bilhete.rifas?.status,
+          data_sorteio: bilhete.rifas?.data_sorteio,
           item_id: bilhete.rifas?.id
         })),
         ...(bilhetesCampanha || []).map(bilhete => ({
@@ -79,7 +96,9 @@ export const useMeusBilhetes = ({ cpf, telefone, shouldSearch }: UseMeusBilhetes
         }))
       ];
 
-      return resultados.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      return resultados.sort((a, b) => 
+        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
     },
     enabled: shouldSearch && cpf.length > 0 && telefone.length > 0,
   });

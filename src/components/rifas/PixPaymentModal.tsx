@@ -1,8 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -18,62 +16,61 @@ interface PixPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   valor: number;
-  quantidade: number;
-  tipo: "rifa" | "campanha";
-  itemId: string;
+  numerosSelecionados: number[];
+  rifaId: string;
   chavePix: string;
-  tituloItem: string;
+  tituloRifa: string;
+  compradorInfo: {
+    nome: string;
+    cpf: string;
+    telefone: string;
+  };
 }
 
 const PixPaymentModal = ({
   isOpen,
   onClose,
   valor,
-  quantidade,
-  tipo,
-  itemId,
+  numerosSelecionados,
+  rifaId,
   chavePix,
-  tituloItem
+  tituloRifa,
+  compradorInfo
 }: PixPaymentModalProps) => {
-  const [compradorInfo, setCompradorInfo] = useState({
-    nome: "",
-    cpf: "",
-    telefone: ""
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const valorTotal = valor * quantidade;
+  const valorTotal = valor * numerosSelecionados.length;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("pagamentos").insert({
-        tipo: tipo,
-        referencia_id: itemId,
-        valor: valorTotal,
-        comprador_nome: compradorInfo.nome,
-        comprador_cpf: compradorInfo.cpf,
-        comprador_telefone: compradorInfo.telefone,
-        status: "pendente",
-        metodo: "pix"
-      });
+      // Reservar os números selecionados
+      const bilhetesParaInserir = numerosSelecionados.map(numero => ({
+        rifa_id: rifaId,
+        numero: numero,
+        nome_comprador: compradorInfo.nome,
+        cpf: compradorInfo.cpf,
+        telefone: compradorInfo.telefone,
+        status: "reservado"
+      }));
+
+      const { error } = await supabase.from("bilhetes_rifa").insert(bilhetesParaInserir);
 
       if (error) throw error;
 
       toast({
-        title: "Pagamento PIX gerado!",
-        description: "Realize o pagamento via PIX e aguarde a confirmação.",
+        title: "Números reservados!",
+        description: "Seus números foram reservados. Aguarde a confirmação do criador da rifa após o pagamento.",
       });
 
       onClose();
     } catch (error) {
-      console.error("Erro ao gerar pagamento:", error);
+      console.error("Erro ao reservar números:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível gerar o pagamento PIX.",
+        description: "Não foi possível reservar os números. Alguns podem já estar ocupados.",
         variant: "destructive"
       });
     } finally {
@@ -91,62 +88,28 @@ const PixPaymentModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Pagamento via PIX</DialogTitle>
           <DialogDescription>
-            Complete seus dados e realize o pagamento
+            Complete o pagamento e confirme para reservar seus números
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="nome" className="text-sm">Nome Completo</Label>
-            <Input
-              id="nome"
-              type="text"
-              value={compradorInfo.nome}
-              onChange={(e) => setCompradorInfo(prev => ({ ...prev, nome: e.target.value }))}
-              required
-              className="h-10"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cpf" className="text-sm">CPF</Label>
-            <Input
-              id="cpf"
-              type="text"
-              value={compradorInfo.cpf}
-              onChange={(e) => setCompradorInfo(prev => ({ ...prev, cpf: e.target.value }))}
-              required
-              className="h-10"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="telefone" className="text-sm">Telefone</Label>
-            <Input
-              id="telefone"
-              type="text"
-              value={compradorInfo.telefone}
-              onChange={(e) => setCompradorInfo(prev => ({ ...prev, telefone: e.target.value }))}
-              required
-              className="h-10"
-            />
-          </div>
-
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <h4 className="font-semibold mb-2 text-sm">Resumo do Pagamento</h4>
-            <div className="text-xs space-y-1">
-              <p><strong>{tituloItem}</strong></p>
-              <p>Quantidade: {quantidade}</p>
-              <p>Valor unitário: R$ {(valor / 100).toFixed(2)}</p>
-              <p className="text-base font-bold">Total: R$ {(valorTotal / 100).toFixed(2)}</p>
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-3">{tituloRifa}</h4>
+            <div className="space-y-2">
+              <p className="text-sm">
+                <strong>Números escolhidos:</strong> {numerosSelecionados.sort((a, b) => a - b).join(", ")}
+              </p>
+              <p className="text-sm">Quantidade: {numerosSelecionados.length}</p>
+              <p className="text-sm">Valor unitário: R$ {(valor / 100).toFixed(2)}</p>
+              <p className="text-lg font-bold">Total: R$ {(valorTotal / 100).toFixed(2)}</p>
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-sm">Chave PIX:</span>
               <Button
@@ -158,27 +121,39 @@ const PixPaymentModal = ({
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
-            <p className="font-mono text-xs bg-white p-2 rounded border break-all">
+            <p className="font-mono text-sm bg-white p-3 rounded border break-all">
               {chavePix}
             </p>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs">
-            <p className="flex items-start">
-              <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-yellow-600 flex-shrink-0" />
-              Após realizar o pagamento, seus bilhetes serão confirmados automaticamente.
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <QrCode className="w-16 h-16 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-600">
+              QR Code seria gerado aqui
             </p>
           </div>
 
-          <div className="flex space-x-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-10">
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+            <p className="flex items-start text-sm">
+              <CheckCircle className="w-5 h-5 mr-2 mt-0.5 text-yellow-600 flex-shrink-0" />
+              <span>
+                <strong>Instruções:</strong><br/>
+                1. Faça o PIX para a chave acima<br/>
+                2. Clique em "Confirmar Pagamento" após transferir<br/>
+                3. Aguarde a confirmação do criador da rifa
+              </span>
+            </p>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="flex-1 h-10">
-              {isSubmitting ? "Processando..." : "Confirmar Dados"}
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? "Processando..." : "Confirmar Pagamento"}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

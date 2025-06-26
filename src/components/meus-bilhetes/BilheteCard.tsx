@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Ticket, Crown } from "lucide-react";
+import { Trophy, Ticket, Crown, Calendar, Clock } from "lucide-react";
 
 interface BilheteCardProps {
   bilhete: {
@@ -14,6 +14,7 @@ interface BilheteCardProps {
     titulo: string;
     tipo: "rifa" | "campanha";
     rifa_status?: string;
+    data_sorteio?: string;
   };
 }
 
@@ -33,15 +34,25 @@ const BilheteCard = ({ bilhete }: BilheteCardProps) => {
     } else {
       switch (status) {
         case "aguardando":
-          return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Aguardando</Badge>;
+          return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Aguardando Confirmação</Badge>;
         case "pago":
-          return <Badge variant="default" className="bg-green-600">Pago</Badge>;
+          return <Badge variant="default" className="bg-green-600">Confirmado</Badge>;
         case "cancelado":
           return <Badge variant="destructive">Cancelado</Badge>;
         default:
           return <Badge variant="secondary">{status}</Badge>;
       }
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -70,34 +81,56 @@ const BilheteCard = ({ bilhete }: BilheteCardProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <p className="text-sm text-gray-600 mb-1">Número</p>
+            <p className="text-sm text-gray-600 mb-1 flex items-center">
+              <Ticket className="w-4 h-4 mr-1" />
+              {bilhete.tipo === "rifa" ? "Número" : "Quantidade"}
+            </p>
             <p className="font-semibold">
-              {bilhete.numero || "N/A"}
+              {bilhete.tipo === "rifa" 
+                ? (bilhete.numero ? `#${bilhete.numero}` : "N/A")
+                : `${bilhete.quantidade} bilhetes`
+              }
             </p>
           </div>
-          {bilhete.tipo === "campanha" && (
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Quantidade</p>
-              <p className="font-semibold">{bilhete.quantidade}</p>
-            </div>
-          )}
+          
           <div>
             <p className="text-sm text-gray-600 mb-1">Status</p>
             {getStatusBadge(bilhete.status || "", bilhete.tipo)}
           </div>
+          
           <div>
-            <p className="text-sm text-gray-600 mb-1">Data</p>
-            <p className="font-semibold">
-              {bilhete.created_at ? new Date(bilhete.created_at).toLocaleDateString() : "N/A"}
+            <p className="text-sm text-gray-600 mb-1 flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              Data da Compra
+            </p>
+            <p className="font-semibold text-sm">
+              {bilhete.created_at ? formatDate(bilhete.created_at) : "N/A"}
             </p>
           </div>
         </div>
+
+        {bilhete.tipo === "rifa" && bilhete.data_sorteio && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800 flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              <strong>Data do Sorteio:</strong> {formatDate(bilhete.data_sorteio)}
+            </p>
+          </div>
+        )}
         
         {bilhete.tipo === "rifa" && bilhete.rifa_status === "encerrada" && !bilhete.is_ganhador && (
           <div className="mt-4 p-3 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600">Esta rifa já foi sorteada. Você não foi contemplado desta vez.</p>
+          </div>
+        )}
+
+        {(bilhete.status === "reservado" || bilhete.status === "aguardando") && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <strong>⏳ Aguardando confirmação:</strong> O criador da {bilhete.tipo} ainda não confirmou seu pagamento.
+            </p>
           </div>
         )}
       </CardContent>
