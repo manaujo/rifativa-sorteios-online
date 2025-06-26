@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlanValidation } from "@/hooks/usePlanValidation";
@@ -32,8 +31,8 @@ const Upgrade = () => {
     {
       id: "economico",
       name: "Econômico",
-      price: "R$ 97,00",
-      stripePrice: "price_economico_monthly",
+      price: "R$ 29,90",
+      stripePrice: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // ID real do Stripe
       period: "por mês",
       popular: false,
       features: [
@@ -48,8 +47,8 @@ const Upgrade = () => {
     {
       id: "padrao",
       name: "Padrão",
-      price: "R$ 159,90",
-      stripePrice: "price_padrao_monthly",
+      price: "R$ 59,90",
+      stripePrice: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // ID real do Stripe
       period: "por mês",
       popular: true,
       features: [
@@ -65,10 +64,10 @@ const Upgrade = () => {
     {
       id: "premium",
       name: "Premium",
-      price: "R$ 499,00",
-      stripePrice: "price_premium_monthly",
+      price: "R$ 99,90",
+      stripePrice: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // ID real do Stripe
       period: "por mês",
-      originalPrice: "R$ 999,90",
+      originalPrice: "R$ 199,90",
       popular: false,
       features: [
         "Até 10 rifas",

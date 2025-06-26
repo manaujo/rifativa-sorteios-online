@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ const Pricing = () => {
       id: "economico",
       name: "Econômico",
       price: "R$ 29,90",
-      priceId: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // Substitua pelo price ID real do Stripe
+      priceId: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // ID real do Stripe
       description: "Ideal para quem está começando",
       features: [
         "Até 2 rifas",
@@ -34,7 +33,7 @@ const Pricing = () => {
       id: "padrao",
       name: "Padrão",
       price: "R$ 59,90",
-      priceId: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // Substitua pelo price ID real do Stripe
+      priceId: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // ID real do Stripe
       description: "Para quem quer crescer",
       features: [
         "Até 5 rifas",
@@ -51,7 +50,7 @@ const Pricing = () => {
       id: "premium",
       name: "Premium",
       price: "R$ 99,90",
-      priceId: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // Substitua pelo price ID real do Stripe
+      priceId: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // ID real do Stripe
       description: "Para profissionais",
       features: [
         "Até 10 rifas",
