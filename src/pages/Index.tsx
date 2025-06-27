@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ import Footer from "@/components/Footer";
 const Index = () => {
   const { toast } = useToast();
 
-  // Query para rifas públicas
+  // Query para rifas públicas - sem autenticação necessária
   const { data: rifas } = useQuery({
     queryKey: ["public-rifas-home"],
     queryFn: async () => {
@@ -33,12 +32,15 @@ const Index = () => {
         .order("created_at", { ascending: false })
         .limit(6);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Erro ao buscar rifas:", error);
+        return [];
+      }
+      return data || [];
     },
   });
 
-  // Query para campanhas públicas
+  // Query para campanhas públicas - sem autenticação necessária
   const { data: campanhas } = useQuery({
     queryKey: ["public-campanhas-home"],
     queryFn: async () => {
@@ -53,8 +55,11 @@ const Index = () => {
         .order("created_at", { ascending: false })
         .limit(6);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Erro ao buscar campanhas:", error);
+        return [];
+      }
+      return data || [];
     },
   });
 

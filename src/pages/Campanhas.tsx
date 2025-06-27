@@ -9,6 +9,7 @@ import CampanhaCard from "@/components/campanhas/CampanhaCard";
 const Campanhas = () => {
   const { toast } = useToast();
   
+  // Query pública - sem autenticação necessária
   const { data: campanhas, isLoading } = useQuery({
     queryKey: ["public-campanhas"],
     queryFn: async () => {
@@ -22,8 +23,11 @@ const Campanhas = () => {
         .order("destaque", { ascending: false })
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Erro ao buscar campanhas:", error);
+        return [];
+      }
+      return data || [];
     },
   });
 

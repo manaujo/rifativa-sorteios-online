@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const UpgradeButton = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,10 +22,19 @@ const UpgradeButton = () => {
   const currentPlan = profile?.plano || "economico";
 
   const handleUpgrade = async () => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login para gerenciar sua assinatura.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-customer-portal', {});
+      const { data, error } = await supabase.functions.invoke('create-customer-portal');
 
       if (error) throw error;
 

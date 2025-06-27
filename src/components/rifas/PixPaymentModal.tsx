@@ -42,6 +42,17 @@ const PixPaymentModal = ({
 
   const valorTotal = valor * numerosSelecionados.length;
 
+  // Função para gerar QR Code PIX
+  const generatePixQRCode = (chavePix: string, valor: number, nomeRecebedor: string, cidade: string = "Cidade") => {
+    const valorFormatado = (valor / 100).toFixed(2);
+    
+    // Payload PIX simplificado
+    const payload = `00020126580014br.gov.bcb.pix0136${chavePix}520400005303986540${valorFormatado.length}${valorFormatado}5802BR5913${nomeRecebedor}6008${cidade}62070503***6304`;
+    
+    // Gerar QR Code usando API pública
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
@@ -86,6 +97,8 @@ const PixPaymentModal = ({
     });
   };
 
+  const qrCodeUrl = generatePixQRCode(chavePix, valorTotal, "Rifativa", "SaoPaulo");
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -127,9 +140,23 @@ const PixPaymentModal = ({
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <QrCode className="w-16 h-16 mx-auto mb-2 text-gray-400" />
+            <img 
+              src={qrCodeUrl} 
+              alt="QR Code PIX" 
+              className="w-48 h-48 mx-auto mb-2 border rounded"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling!.style.display = 'block';
+              }}
+            />
+            <div style={{ display: 'none' }} className="flex flex-col items-center">
+              <QrCode className="w-16 h-16 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                Erro ao gerar QR Code
+              </p>
+            </div>
             <p className="text-sm text-gray-600">
-              QR Code seria gerado aqui
+              Escaneie o QR Code ou copie a chave PIX
             </p>
           </div>
 
