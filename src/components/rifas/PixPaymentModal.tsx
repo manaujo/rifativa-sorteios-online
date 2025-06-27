@@ -145,8 +145,12 @@ const PixPaymentModal = ({
               alt="QR Code PIX" 
               className="w-48 h-48 mx-auto mb-2 border rounded"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling!.style.display = 'block';
+                const target = e.currentTarget as HTMLImageElement;
+                const nextElement = target.nextElementSibling as HTMLElement;
+                target.style.display = 'none';
+                if (nextElement) {
+                  nextElement.style.display = 'block';
+                }
               }}
             />
             <div style={{ display: 'none' }} className="flex flex-col items-center">
