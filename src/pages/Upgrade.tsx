@@ -32,7 +32,6 @@ const Upgrade = () => {
       id: "economico",
       name: "Econômico",
       price: "R$ 29,90",
-      stripePrice: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // ID real do Stripe
       period: "por mês",
       popular: false,
       features: [
@@ -48,7 +47,6 @@ const Upgrade = () => {
       id: "padrao",
       name: "Padrão",
       price: "R$ 59,90",
-      stripePrice: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // ID real do Stripe
       period: "por mês",
       popular: true,
       features: [
@@ -65,7 +63,6 @@ const Upgrade = () => {
       id: "premium",
       name: "Premium",
       price: "R$ 99,90",
-      stripePrice: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // ID real do Stripe
       period: "por mês",
       originalPrice: "R$ 199,90",
       popular: false,
@@ -108,18 +105,25 @@ const Upgrade = () => {
     }
   };
 
-  const handleSubscribe = async (planId: string, stripePriceId: string) => {
+  const handleSubscribe = async (planId: string) => {
     setIsLoading(planId);
 
     try {
+      console.log("Criando checkout para plano:", planId);
+      
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: { 
-          priceId: stripePriceId,
+          priceId: `dynamic_${planId}`, // Usando ID dinâmico
           planId: planId
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na função:", error);
+        throw error;
+      }
+
+      console.log("Resposta da função:", data);
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -127,6 +131,8 @@ const Upgrade = () => {
           title: "Redirecionando para pagamento",
           description: "Uma nova aba foi aberta para o pagamento da assinatura.",
         });
+      } else {
+        throw new Error("URL de checkout não recebida");
       }
     } catch (error: any) {
       console.error('Erro no checkout:', error);
@@ -144,9 +150,16 @@ const Upgrade = () => {
     setIsLoading("manage");
 
     try {
+      console.log("Abrindo portal do cliente...");
+      
       const { data, error } = await supabase.functions.invoke('create-customer-portal', {});
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao abrir portal:", error);
+        throw error;
+      }
+
+      console.log("Resposta do portal:", data);
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -154,6 +167,8 @@ const Upgrade = () => {
           title: "Redirecionando",
           description: "Abrindo portal de gerenciamento de assinatura.",
         });
+      } else {
+        throw new Error("URL do portal não recebida");
       }
     } catch (error: any) {
       console.error('Erro ao abrir portal:', error);
@@ -310,7 +325,7 @@ const Upgrade = () => {
               </ul>
 
               <Button 
-                onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
+                onClick={() => handleSubscribe(plan.id)}
                 disabled={isLoading === plan.id || plan.id === currentPlan}
                 className={`w-full py-3 ${
                   plan.id === currentPlan
@@ -323,8 +338,14 @@ const Upgrade = () => {
                 {plan.id === currentPlan 
                   ? 'Plano Atual'
                   : isLoading === plan.id 
-                    ? 'Processando...' 
-                    : `Fazer Upgrade para ${plan.name}`
+                    ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Processando...
+                      </>
+                    ) : (
+                      `Fazer Upgrade para ${plan.name}`
+                    )
                 }
               </Button>
             </div>

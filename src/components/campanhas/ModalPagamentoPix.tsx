@@ -58,21 +58,37 @@ const ModalPagamentoPix = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
+    console.log("Iniciando confirmação de pagamento da campanha...");
 
     try {
       // Criar bilhete de campanha com status "aguardando"
-      const { error } = await supabase.from("bilhetes_campanha").insert({
+      const bilheteData = {
         campanha_id: campanhaId,
         quantidade: quantidade,
         nome_comprador: compradorInfo.nome,
         cpf: compradorInfo.cpf,
         telefone: compradorInfo.telefone,
-        status: "aguardando",
+        status: "aguardando" as const,
         valor_pago: valorTotal
-      });
+      };
 
-      if (error) throw error;
+      console.log("Inserindo bilhete de campanha:", bilheteData);
+
+      const { data: bilheteInserido, error } = await supabase
+        .from("bilhetes_campanha")
+        .insert(bilheteData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao inserir bilhete:", error);
+        throw new Error("Erro ao registrar a compra. Tente novamente.");
+      }
+
+      console.log("Bilhete de campanha inserido com sucesso:", bilheteInserido);
 
       toast({
         title: "Compra registrada!",
@@ -80,12 +96,17 @@ const ModalPagamentoPix = ({
       });
 
       onPagamentoConfirmado();
-      onClose();
-    } catch (error) {
-      console.error("Erro ao registrar compra:", error);
+      
+      // Fechar modal após sucesso
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("Erro completo:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível registrar a compra. Tente novamente.",
+        description: error.message || "Não foi possível registrar a compra. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -185,7 +206,14 @@ const ModalPagamentoPix = ({
               disabled={isSubmitting} 
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              {isSubmitting ? "Processando..." : "Confirmar Pagamento"}
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processando...
+                </>
+              ) : (
+                "Confirmar Pagamento"
+              )}
             </Button>
           </div>
         </div>

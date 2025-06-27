@@ -54,9 +54,29 @@ const PixPaymentModal = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
+    console.log("Iniciando confirmação de pagamento...");
 
     try {
+      // Verificar se os números ainda estão disponíveis
+      const { data: bilhetesExistentes, error: verificarError } = await supabase
+        .from("bilhetes_rifa")
+        .select("numero")
+        .eq("rifa_id", rifaId)
+        .in("numero", numerosSelecionados);
+
+      if (verificarError) {
+        console.error("Erro ao verificar bilhetes:", verificarError);
+        throw new Error("Erro ao verificar disponibilidade dos números");
+      }
+
+      if (bilhetesExistentes && bilhetesExistentes.length > 0) {
+        const numerosOcupados = bilhetesExistentes.map(b => b.numero);
+        throw new Error(`Os números ${numerosOcupados.join(", ")} já foram vendidos. Escolha outros números.`);
+      }
+
       // Reservar os números selecionados
       const bilhetesParaInserir = numerosSelecionados.map(numero => ({
         rifa_id: rifaId,
@@ -67,21 +87,35 @@ const PixPaymentModal = ({
         status: "reservado" as const
       }));
 
-      const { error } = await supabase.from("bilhetes_rifa").insert(bilhetesParaInserir);
+      console.log("Inserindo bilhetes:", bilhetesParaInserir);
 
-      if (error) throw error;
+      const { data: bilhetesInseridos, error: inserirError } = await supabase
+        .from("bilhetes_rifa")
+        .insert(bilhetesParaInserir)
+        .select();
+
+      if (inserirError) {
+        console.error("Erro ao inserir bilhetes:", inserirError);
+        throw new Error("Erro ao reservar os números. Alguns podem já estar ocupados.");
+      }
+
+      console.log("Bilhetes inseridos com sucesso:", bilhetesInseridos);
 
       toast({
         title: "Números reservados!",
         description: "Seus números foram reservados. Aguarde a confirmação do criador da rifa após o pagamento.",
       });
 
-      onClose();
-    } catch (error) {
-      console.error("Erro ao reservar números:", error);
+      // Fechar modal após sucesso
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("Erro completo:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível reservar os números. Alguns podem já estar ocupados.",
+        description: error.message || "Não foi possível reservar os números. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -180,8 +214,19 @@ const PixPaymentModal = ({
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? "Processando..." : "Confirmar Pagamento"}
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting} 
+              className="flex-1"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processando...
+                </>
+              ) : (
+                "Confirmar Pagamento"
+              )}
             </Button>
           </div>
         </div>

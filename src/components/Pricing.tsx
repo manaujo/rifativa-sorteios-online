@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,6 @@ const Pricing = () => {
       id: "economico",
       name: "Econômico",
       price: "R$ 29,90",
-      priceId: "price_1QZyWLIZKCJ93bfRvJg4RJJK", // ID real do Stripe
       description: "Ideal para quem está começando",
       features: [
         "Até 2 rifas",
@@ -33,7 +33,6 @@ const Pricing = () => {
       id: "padrao",
       name: "Padrão",
       price: "R$ 59,90",
-      priceId: "price_1QZyWmIZKCJ93bfRu4mNMTPO", // ID real do Stripe
       description: "Para quem quer crescer",
       features: [
         "Até 5 rifas",
@@ -50,7 +49,6 @@ const Pricing = () => {
       id: "premium",
       name: "Premium",
       price: "R$ 99,90",
-      priceId: "price_1QZyXBIZKCJ93bfRYhzO2zLB", // ID real do Stripe
       description: "Para profissionais",
       features: [
         "Até 10 rifas",
@@ -66,7 +64,7 @@ const Pricing = () => {
     }
   ];
 
-  const handleSelectPlan = async (planId: string, priceId: string) => {
+  const handleSelectPlan = async (planId: string) => {
     if (!user) {
       toast({
         title: "Login necessário",
@@ -79,14 +77,21 @@ const Pricing = () => {
     setLoadingPlan(planId);
 
     try {
+      console.log("Criando checkout para plano:", planId);
+      
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: {
-          priceId: priceId,
+          priceId: `dynamic_${planId}`, // Usando ID dinâmico já que criamos o price na função
           planId: planId
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na função:", error);
+        throw error;
+      }
+
+      console.log("Resposta da função:", data);
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -94,9 +99,11 @@ const Pricing = () => {
           title: "Redirecionando para checkout",
           description: "Uma nova aba foi aberta para o pagamento.",
         });
+      } else {
+        throw new Error("URL de checkout não recebida");
       }
     } catch (error: any) {
-      console.error('Erro ao criar checkout:', error);
+      console.error('Erro completo ao criar checkout:', error);
       toast({
         title: "Erro no checkout",
         description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
@@ -171,7 +178,7 @@ const Pricing = () => {
                       : 'bg-gray-800 hover:bg-gray-700'
                   }`}
                   size="lg"
-                  onClick={() => handleSelectPlan(plan.id, plan.priceId)}
+                  onClick={() => handleSelectPlan(plan.id)}
                   disabled={loadingPlan === plan.id}
                 >
                   {loadingPlan === plan.id ? (

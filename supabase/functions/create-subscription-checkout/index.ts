@@ -71,13 +71,41 @@ serve(async (req) => {
       logStep("New customer created", { customerId });
     }
 
+    // Create subscription for the plan
+    let productData;
+    let unitAmount;
+    
+    switch (planId) {
+      case "economico":
+        productData = { name: "Plano Econômico - Rifativa" };
+        unitAmount = 2990; // R$ 29,90
+        break;
+      case "padrao":
+        productData = { name: "Plano Padrão - Rifativa" };
+        unitAmount = 5990; // R$ 59,90
+        break;
+      case "premium":
+        productData = { name: "Plano Premium - Rifativa" };
+        unitAmount = 9990; // R$ 99,90
+        break;
+      default:
+        throw new Error("Invalid plan ID");
+    }
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: 'brl',
+            product_data: productData,
+            unit_amount: unitAmount,
+            recurring: {
+              interval: 'month',
+            },
+          },
           quantity: 1,
         },
       ],
