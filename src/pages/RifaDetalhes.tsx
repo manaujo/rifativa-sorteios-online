@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +24,7 @@ const RifaDetalhes = () => {
     telefone: ""
   });
 
-  const { data: rifa, isLoading } = useQuery({
+  const { data: rifa, isLoading, refetch } = useQuery({
     queryKey: ["rifa", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -80,6 +79,18 @@ const RifaDetalhes = () => {
     }
 
     setShowPixModal(true);
+  };
+
+  const handlePagamentoConfirmado = () => {
+    // Limpar seleção e recarregar dados
+    setNumerosSelecionados([]);
+    setCompradorInfo({
+      nome: "",
+      cpf: "",
+      telefone: ""
+    });
+    // Recarregar os dados da rifa
+    refetch();
   };
 
   if (isLoading) {
@@ -283,6 +294,7 @@ const RifaDetalhes = () => {
         chavePix={rifa.users?.chave_pix || ""}
         tituloRifa={rifa.titulo}
         compradorInfo={compradorInfo}
+        onPagamentoConfirmado={handlePagamentoConfirmado}
       />
     </div>
   );

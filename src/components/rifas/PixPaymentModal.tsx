@@ -25,6 +25,7 @@ interface PixPaymentModalProps {
     cpf: string;
     telefone: string;
   };
+  onPagamentoConfirmado?: () => void;
 }
 
 const PixPaymentModal = ({
@@ -35,7 +36,8 @@ const PixPaymentModal = ({
   rifaId,
   chavePix,
   tituloRifa,
-  compradorInfo
+  compradorInfo,
+  onPagamentoConfirmado
 }: PixPaymentModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -105,6 +107,11 @@ const PixPaymentModal = ({
         title: "Números reservados!",
         description: "Seus números foram reservados. Aguarde a confirmação do criador da rifa após o pagamento.",
       });
+
+      // Chamar callback se fornecido
+      if (onPagamentoConfirmado) {
+        onPagamentoConfirmado();
+      }
 
       // Fechar modal após sucesso
       setTimeout(() => {
