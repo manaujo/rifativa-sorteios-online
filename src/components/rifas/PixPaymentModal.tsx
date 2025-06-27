@@ -57,7 +57,7 @@ const PixPaymentModal = ({
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    console.log("Iniciando confirmação de pagamento...");
+    console.log("Iniciando confirmação de pagamento da rifa...");
 
     try {
       // Verificar se os números ainda estão disponíveis
@@ -87,7 +87,7 @@ const PixPaymentModal = ({
         status: "reservado" as const
       }));
 
-      console.log("Inserindo bilhetes:", bilhetesParaInserir);
+      console.log("Inserindo bilhetes de rifa:", bilhetesParaInserir);
 
       const { data: bilhetesInseridos, error: inserirError } = await supabase
         .from("bilhetes_rifa")
@@ -99,7 +99,7 @@ const PixPaymentModal = ({
         throw new Error("Erro ao reservar os números. Alguns podem já estar ocupados.");
       }
 
-      console.log("Bilhetes inseridos com sucesso:", bilhetesInseridos);
+      console.log("Bilhetes de rifa inseridos com sucesso:", bilhetesInseridos);
 
       toast({
         title: "Números reservados!",
@@ -180,7 +180,7 @@ const PixPaymentModal = ({
               className="w-48 h-48 mx-auto mb-2 border rounded"
               onError={(e) => {
                 const target = e.currentTarget as HTMLImageElement;
-                const nextElement = target.nextElementSibling as HTMLElement;
+                const nextElement = target.nextElementSibling as HTMLElement | null;
                 target.style.display = 'none';
                 if (nextElement) {
                   nextElement.style.display = 'block';

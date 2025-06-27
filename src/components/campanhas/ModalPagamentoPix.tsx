@@ -64,15 +64,14 @@ const ModalPagamentoPix = ({
     console.log("Iniciando confirmação de pagamento da campanha...");
 
     try {
-      // Criar bilhete de campanha com status "aguardando"
+      // Criar bilhete de campanha com status "aguardando" - removendo valor_pago
       const bilheteData = {
         campanha_id: campanhaId,
         quantidade: quantidade,
         nome_comprador: compradorInfo.nome,
         cpf: compradorInfo.cpf,
         telefone: compradorInfo.telefone,
-        status: "aguardando" as const,
-        valor_pago: valorTotal
+        status: "aguardando" as const
       };
 
       console.log("Inserindo bilhete de campanha:", bilheteData);
@@ -156,7 +155,7 @@ const ModalPagamentoPix = ({
               className="w-48 h-48 mx-auto mb-2 border rounded"
               onError={(e) => {
                 const target = e.currentTarget as HTMLImageElement;
-                const nextElement = target.nextElementSibling as HTMLElement;
+                const nextElement = target.nextElementSibling as HTMLElement | null;
                 target.style.display = 'none';
                 if (nextElement) {
                   nextElement.style.display = 'block';
