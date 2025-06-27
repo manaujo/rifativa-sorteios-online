@@ -71,22 +71,22 @@ serve(async (req) => {
       logStep("New customer created", { customerId });
     }
 
-    // Create subscription for the plan
+    // Create subscription for the plan with updated prices
     let productData;
     let unitAmount;
     
     switch (planId) {
       case "economico":
         productData = { name: "Plano Econômico - Rifativa" };
-        unitAmount = 2990; // R$ 29,90
+        unitAmount = 9700; // R$ 97,00
         break;
       case "padrao":
         productData = { name: "Plano Padrão - Rifativa" };
-        unitAmount = 5990; // R$ 59,90
+        unitAmount = 15990; // R$ 159,90
         break;
       case "premium":
         productData = { name: "Plano Premium - Rifativa" };
-        unitAmount = 9990; // R$ 99,90
+        unitAmount = 49900; // R$ 499,00
         break;
       default:
         throw new Error("Invalid plan ID");

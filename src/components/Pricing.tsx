@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ const Pricing = () => {
     {
       id: "economico",
       name: "Econômico",
-      price: "R$ 29,90",
+      price: "R$ 97,00",
       description: "Ideal para quem está começando",
       features: [
         "Até 2 rifas",
@@ -32,7 +31,7 @@ const Pricing = () => {
     {
       id: "padrao",
       name: "Padrão",
-      price: "R$ 59,90",
+      price: "R$ 159,90",
       description: "Para quem quer crescer",
       features: [
         "Até 5 rifas",
@@ -48,7 +47,7 @@ const Pricing = () => {
     {
       id: "premium",
       name: "Premium",
-      price: "R$ 99,90",
+      price: "R$ 499,00",
       description: "Para profissionais",
       features: [
         "Até 10 rifas",
@@ -81,7 +80,7 @@ const Pricing = () => {
       
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: {
-          priceId: `dynamic_${planId}`, // Usando ID dinâmico já que criamos o price na função
+          priceId: `dynamic_${planId}`,
           planId: planId
         }
       });

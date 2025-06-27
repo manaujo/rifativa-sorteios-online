@@ -31,7 +31,7 @@ const Upgrade = () => {
     {
       id: "economico",
       name: "Econômico",
-      price: "R$ 29,90",
+      price: "R$ 97,00",
       period: "por mês",
       popular: false,
       features: [
@@ -46,7 +46,7 @@ const Upgrade = () => {
     {
       id: "padrao",
       name: "Padrão",
-      price: "R$ 59,90",
+      price: "R$ 159,90",
       period: "por mês",
       popular: true,
       features: [
@@ -62,9 +62,8 @@ const Upgrade = () => {
     {
       id: "premium",
       name: "Premium",
-      price: "R$ 99,90",
+      price: "R$ 499,00",
       period: "por mês",
-      originalPrice: "R$ 199,90",
       popular: false,
       features: [
         "Até 10 rifas",
@@ -113,7 +112,7 @@ const Upgrade = () => {
       
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: { 
-          priceId: `dynamic_${planId}`, // Usando ID dinâmico
+          priceId: `dynamic_${planId}`,
           planId: planId
         }
       });
@@ -303,11 +302,6 @@ const Upgrade = () => {
                   {plan.name}
                 </h3>
                 <div className="mb-2">
-                  {plan.originalPrice && (
-                    <span className="text-gray-400 line-through text-lg mr-2">
-                      {plan.originalPrice}
-                    </span>
-                  )}
                   <span className="text-3xl font-bold gradient-text">
                     {plan.price}
                   </span>
